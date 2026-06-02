@@ -1,12 +1,13 @@
 // ============================================================
-// trade-merchant.js — Merchant: free item-card swap negotiation
+// trade-merchant.js — Merchant: buy a rival's item card with COINS
 // ============================================================
-// Played for free during morning. The player picks one of their ITEM
-// cards to give and requests one of a rival's ITEM cards in return.
-// The rival (AI) accepts or declines the 1-for-1 item swap.
+// Played for free during your morning turn. Pick a rival, then pay
+// coins to take one of their ITEM cards straight into your hand. The
+// rival (AI) accepts or declines based on whether the price is fair.
+// Straightforward: coins out, item in — no swapping, no item from you.
 
 Object.assign(Engine, {
-  // Step 1: player plays Merchant and chooses which rival to trade with
+  // Step 1: player plays Merchant and chooses which rival to buy from
   startMerchantTrade(merchantUID, targetId) {
     if (!this.canAct()) return;
     const me = this.human();
@@ -15,61 +16,66 @@ Object.assign(Engine, {
     const merchant = me.hand.find(c => c.uid === merchantUID);
     if (!merchant || merchant.id !== 'merchant') return;
 
-    const myItems = me.hand.filter(c => c.type === 'item');
     const theirItems = target.hand.filter(c => c.type === 'item');
-    if (myItems.length === 0) { this.notify('🧔 You have no item cards to trade.', 'warn'); UI.render(); return; }
-    if (theirItems.length === 0) { this.notify(`🧔 ${target.name} has no item cards to trade.`, 'warn'); UI.render(); return; }
+    if (theirItems.length === 0) { this.notify(`🧔 ${target.name} has no items to sell.`, 'warn'); UI.render(); return; }
+    if (me.hand.length >= HAND_LIMIT) { this.notify(`✋ Your hand is full (max ${HAND_LIMIT}).`, 'warn'); UI.render(); return; }
 
-    this.state.pendingItemTrade = { merchantUID, target, giveUID: null, wantUID: null };
-    this.notify(`🧔 Merchant trade with ${target.name} — pick items to swap.`, 'info');
+    // pendingItemTrade now means "buying an item for coins"
+    this.state.pendingItemTrade = { merchantUID, target, wantUID: null };
+    this.notify(`🧔 Merchant — buy an item from ${target.name} with coins.`, 'info');
     UI.render();
   },
 
-  // Step 2: player picks the item they give and the item they want
-  proposeItemSwap(giveUID, wantUID) {
+  // The price a buyer pays for an item (its shop buyPrice, default 3)
+  itemBuyPrice(card) {
+    return (card && card.buyPrice) || 3;
+  },
+
+  // Step 2: player picks which of the rival's items to buy
+  proposeItemBuy(wantUID) {
     const pit = this.state.pendingItemTrade;
     if (!pit) return;
-    pit.giveUID = giveUID;
-    pit.wantUID = wantUID;
-
     const me = this.human();
     const target = pit.target;
-    const give = me.hand.find(c => c.uid === giveUID);
     const want = target.hand.find(c => c.uid === wantUID);
-    if (!give || !want) return;
+    if (!want) return;
+    const price = this.itemBuyPrice(want);
+    if (me.money < price) { this.notify(`🪙 You can't afford ${want.name} (${price}🪙).`, 'warn'); UI.render(); return; }
 
-    // AI evaluates the swap: accept if the wanted card is not strictly better
-    const rank = { coin_pouch: 3, health_vial: 2, shield: 1 };
-    const fair = (rank[give.id] || 1) >= (rank[want.id] || 1) || Math.random() < 0.4;
-    this.state.busy = true; // lock while the rival considers the swap
-    setTimeout(() => this.resolveItemSwap(fair), 1400);
-    this.notify(`🤝 Offering your ${give.icon} ${give.name} for ${target.name}'s ${want.icon} ${want.name}…`, 'info');
+    pit.wantUID = wantUID;
+    pit.price = price;
+    // AI seller decides: usually accepts a fair offer; refuses sometimes
+    const accept = Math.random() < 0.75;
+    this.state.busy = true;
+    this.notify(`🤝 Offering ${price}🪙 for ${target.name}'s ${want.icon} ${want.name}…`, 'info');
     UI.render();
+    setTimeout(() => this.resolveItemBuy(accept), 1400);
   },
 
-  resolveItemSwap(accepted) {
+  resolveItemBuy(accepted) {
     const pit = this.state.pendingItemTrade;
     if (!pit) return;
     const me = this.human();
     const target = pit.target;
+    const price = pit.price;
     this.state.pendingItemTrade = null;
 
     if (!accepted) {
-      this.notify(`❌ ${target.name} declined the item swap.`, 'warn');
+      this.notify(`❌ ${target.name} refused to sell.`, 'warn');
       // The Merchant attempt still costs one play
-      if (this.state.phase === 'morning' && this.isHumanTurn()) this.consumePlay();
+      if (this.state.phase === 'day' && this.isHumanTurn()) this.consumePlay();
       else { this.state.busy = false; UI.render(); }
       return;
     }
-    const give = CardSystem.removeFromHand(me, pit.giveUID);
+    // Pay coins, move the item from the rival into your hand
+    me.money -= price;
+    target.money += price;
     const want = CardSystem.removeFromHand(target, pit.wantUID);
-    if (give) target.hand.push(give);
     if (want) me.hand.push(want);
-    // Merchant card is consumed when the trade completes
-    CardSystem.removeFromHand(me, pit.merchantUID);
-    FX.sound('card'); FX.float('🤝 Swap!', '#6bff8a');
-    this.notify(`✅ Swap! Gave ${give.icon} ${give.name}, got ${want.icon} ${want.name}.`, 'good');
-    if (this.state.phase === 'morning' && this.isHumanTurn()) this.consumePlay();
+    CardSystem.removeFromHand(me, pit.merchantUID); // Merchant is consumed
+    FX.event('coins'); FX.float(`🛒 ${want ? want.icon : ''} bought!`, '#6bff8a');
+    this.notify(`✅ Bought ${want.icon} ${want.name} from ${target.name} for ${price}🪙.`, 'good');
+    if (this.state.phase === 'day' && this.isHumanTurn()) this.consumePlay();
     else { this.state.busy = false; UI.render(); }
   },
 

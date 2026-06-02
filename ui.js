@@ -26,8 +26,7 @@ const UI = {
     }
     document.body.dataset.phase = s.phase; // drives phase color theme
     const gs = document.getElementById('game-screen');
-    gs.classList.toggle('afternoon-mode', s.phase === 'afternoon');
-    gs.classList.toggle('midnight-mode', s.phase === 'midnight' || s.phase === 'resolve');
+    gs.classList.toggle('night-mode', s.phase === 'sleep' || s.phase === 'resolve');
     gs.classList.toggle('gameover-mode', s.phase === 'gameover');
     gs.classList.toggle('busy', !!s.busy); // input lock: a move is resolving
     this.renderHeader();
@@ -36,19 +35,77 @@ const UI = {
     this.renderPlayerStats();
     this.renderHand();
     this.renderAction();
+    this.renderOverlay();
+  },
+
+  // --- Fullscreen overlays (Market / Castle Map) that pause the board ---
+  renderOverlay() {
+    let el = document.getElementById('game-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'game-overlay';
+      document.body.appendChild(el);
+    }
+    const ov = Engine.state.overlay;
+    if (!ov) { el.classList.remove('open'); el.innerHTML = ''; return; }
+    el.innerHTML = ov === 'market' ? this.marketOverlayHTML() : this.mapOverlayHTML();
+    el.classList.add('open');
+  },
+
+  // Fullscreen MARKET — spend coins on three tabs of wares
+  marketOverlayHTML() {
+    const s = Engine.state, me = Engine.human();
+    const curTab = s.shopTab || 'buffs';
+    const tabBtns = SHOP_TABS.map(t =>
+      `<button class="shop-tab${t.id === curTab ? ' on' : ''}" ` +
+      `onclick="Engine.shopSelectTab('${t.id}')">${t.icon} ${t.name}</button>`).join('');
+    const tab = SHOP_TABS.find(t => t.id === curTab) || SHOP_TABS[0];
+    const wares = tab.items.map(w => {
+      const afford = me.money >= w.price;
+      const cardFull = w.kind === 'card' && me.hand.length >= HAND_LIMIT;
+      const locked = !afford || cardFull;
+      return `<div class="shop-item${locked ? ' locked' : ''}">` +
+        `<div class="shop-art">${w.icon}</div>` +
+        `<div class="shop-name">${w.name}</div>` +
+        `<div class="shop-desc">${w.desc}</div>` +
+        `<button class="shop-buy${afford ? '' : ' poor'}" ${locked ? 'disabled' : ''} ` +
+          `onclick="Engine.buyShop('${w.id}')">${cardFull ? '✋ Full' : '🪙 ' + w.price}</button>` +
+      `</div>`;
+    }).join('');
+    return `<div class="overlay-panel market-panel">` +
+      `<div class="shop-head"><h2>🏪 MARKET</h2>` +
+        `<div class="shop-purse">🪙 <strong>${me.money}</strong></div></div>` +
+      `<div class="shop-tabs">${tabBtns}</div>` +
+      `<div class="shop-grid">${wares}</div>` +
+      `<button class="btn-action" onclick="Engine.closeOverlay()">Close ✕</button>` +
+    `</div>`;
+  },
+
+  // Fullscreen CASTLE MAP — hide assassins anywhere, any time
+  mapOverlayHTML() {
+    const me = Engine.human();
+    const left = me.assassins.length;
+    return `<div class="overlay-panel map-panel">` +
+      `<div class="shop-head"><h2>🗺️ CASTLE MAP</h2>` +
+        `<div class="shop-purse">🥷 <strong>${left}</strong> left</div></div>` +
+      `<p style="text-align:center;color:#c8b8e0;margin:-4px 0 8px;">` +
+        `${left > 0 ? 'Click a room to hide an assassin there — it ambushes anyone sleeping there for 2 HP.' : 'No assassins to hide right now. Buy more in the Market or wait for dawn.'}</p>` +
+      this.castleMapHTML('place') +
+      `<button class="btn-action" onclick="Engine.closeOverlay()" style="margin-top:12px;">Close ✕</button>` +
+    `</div>`;
   },
 
   // --- Header ---
   renderHeader() {
     const s = Engine.state;
-    const phases = { setup:'👑 RULERS', morning:'☀️ MORNING', afternoon:'🌤️ AFTERNOON',
-      evening:'🌅 EVENING', midnight:'🌙 MIDNIGHT', resolve:'⚔️ RESOLVE', gameover:'🏁 GAME OVER' };
+    const phases = { setup:'👑 RULERS', day:'☀️ DAY', sleep:'🌙 NIGHT',
+      resolve:'⚔️ NIGHT', gameover:'🏁 GAME OVER' };
     this.dayCounter.textContent = `DAY ${s.day}`;
     this.phaseName.textContent = phases[s.phase] || s.phase;
     this.playerRuler.innerHTML = '';
     const me = Engine.human();
     this.playerRulerInfo.innerHTML = me.ruler
-      ? `Ruler: ${me.ruler.icon} <strong>${me.ruler.name}</strong> — <span class="ruler-power">${me.ruler.desc}</span>`
+      ? `<span class="ruler-tag">Your Ruler</span> ${me.ruler.icon} <strong>${me.ruler.name}</strong> — <span class="ruler-power">${me.ruler.desc}</span>`
       : '';
   },
 
@@ -63,8 +120,8 @@ const UI = {
   renderOpponents() {
     const s = Engine.state;
     const ais = s.players.filter(p => p.ai);
-    const cur = (s.phase === 'morning' && s.morningStarted) ? Engine.currentPlayer() : null;
-    const canDrop = s.phase === 'morning' && s.morningStarted && Engine.isHumanTurn() && !s.pendingTrade && !s.pendingItemTrade;
+    const cur = (s.phase === 'day' && s.dayStarted) ? Engine.currentPlayer() : null;
+    const canDrop = s.phase === 'day' && s.dayStarted && Engine.isHumanTurn() && !s.pendingTrade && !s.pendingItemTrade && !s.overlay;
     [this.opp1, this.opp2].forEach((el, i) => {
       const ai = ais[i];
       if (!ai) { el.innerHTML = ''; el.className = 'opponent-card'; return; }
@@ -117,10 +174,11 @@ const UI = {
   canPlay(card) {
     const s = Engine.state;
     if (s.busy) return false;                    // a move is still resolving
-    if (card.type === 'assassin') return false; // assassins only at midnight
-    if (s.phase !== 'morning') return false;
-    if (!s.morningStarted) return false;
-    if (s.pendingTrade || s.pendingItemTrade) return false;
+    if (s.overlay) return false;                 // market/map overlay is open
+    if (card.type === 'assassin') return false;  // assassins are hidden on the map
+    if (s.phase !== 'day') return false;
+    if (!s.dayStarted) return false;
+    if (s.pendingTrade || s.pendingItemTrade || s.pendingTarget) return false;
     if (!Engine.isHumanTurn()) return false;
     if (s.playsLeft <= 0) return false;
     return true;
@@ -136,7 +194,7 @@ const UI = {
       const locked = !ok;
       let hint = '';
       if (ok && card.type === 'character') hint = card.id === 'merchant'
-        ? `<div class="card-hint">TRADE ITEMS</div>` : `<div class="card-hint">GIVE TO RIVAL</div>`;
+        ? `<div class="card-hint">BUY AN ITEM</div>` : `<div class="card-hint">GIVE TO RIVAL</div>`;
       else if (ok && card.type === 'item') hint = `<div class="card-hint">USE ON SELF</div>`;
       html += `<div class="card ${card.type}${draggable ? ' draggable-card' : ''}${locked ? ' locked' : ''}" ` +
         `${draggable ? 'draggable="true"' : ''} data-uid="${card.uid}" ` +
@@ -152,8 +210,8 @@ const UI = {
         `<div class="card-type-tag">ASSASSIN</div>` +
         `<div class="card-name">Assassin</div>` +
         `<div class="card-art">🥷</div>` +
-        `<div class="card-desc">Place at midnight. 2 dmg.</div>` +
-        `<div class="card-hint">NIGHT ONLY</div></div>`;
+        `<div class="card-desc">Hide on the map. 2 dmg.</div>` +
+        `<div class="card-hint">USE 🗺️ MAP</div></div>`;
     });
     this.playerHand.innerHTML = html || '<p style="color:#6a5a4a;padding:20px;">No cards in hand.</p>';
     this.wireDrag();
@@ -222,9 +280,9 @@ const UI = {
     const card = all.find(c => c.uid === uid) || all.find(c => c.id === uid);
     if (!card) return;
     const extra = card.type === 'character'
-      ? (card.free ? 'Free to play. Opens an item trade.' : `Costs the buyer ${card.tradePrice} 🪙. They USE the effect.`)
-      : card.type === 'item' ? 'Played on yourself.'
-      : 'Placed at midnight to ambush a sleeper.';
+      ? (card.free ? 'Free to play. Buy a rival\'s item with coins.' : `Costs the buyer ${card.tradePrice} 🪙. They USE the effect.`)
+      : card.type === 'item' ? (card.targeted ? 'Aimed at a rival.' : 'Played on yourself.')
+      : 'Hidden on the castle map to ambush a sleeper.';
     document.getElementById('card-modal').innerHTML =
       `<div class="modal-back" onclick="UI.closeInfo()"></div>` +
       `<div class="modal-card ${card.type}">` +
@@ -245,7 +303,7 @@ const UI = {
   // After picking a card (click or drag), choose which rival to play it on
   pickTarget(card) {
     const targets = Engine.aliveAI();
-    const verb = card.id === 'merchant' ? 'trade items with' : 'sell to';
+    const verb = card.id === 'merchant' ? 'buy an item from' : 'sell to';
     this.actionArea.innerHTML = `<h3>${card.icon} ${card.name}</h3><p>Who do you want to ${verb}?</p>` +
       `<div class="choice-grid">` +
       targets.map(p => `<button class="choice-btn" style="border-left:4px solid ${p.color}" ` +

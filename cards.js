@@ -41,13 +41,14 @@ const CardSystem = {
     return this.createCard(DRAW_POOL[DRAW_POOL.length - 1]);
   },
 
-  // Give starting hand (4 cards: a Merchant, a character, 2 items)
+  // Give starting hand — 5 cards: Merchant + 2 staple items + 2 random draws
   createStartingHand() {
     return [
       this.createCard(CHARACTER_CARDS.find(c => c.id === 'merchant')),
-      this.createCard(CHARACTER_CARDS.find(c => c.id === 'chef')),
       this.createCard(ITEM_CARDS.find(c => c.id === 'health_vial')),
       this.createCard(ITEM_CARDS.find(c => c.id === 'coin_pouch')),
+      this.randomDraw(),
+      this.randomDraw(),
     ];
   },
 

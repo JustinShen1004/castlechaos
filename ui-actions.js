@@ -1,62 +1,61 @@
 // ============================================================
-// ui-actions.js — Action-area (center panel) rendering per phase
+// ui-actions.js — Action-area + overlay rendering per phase
 // ============================================================
 
 Object.assign(UI, {
   renderAction() {
     const s = Engine.state;
-    // Merchant item-swap overlay takes priority during morning
+    // Pending interactions take priority over the phase panel
     if (s.pendingItemTrade) { this.actionArea.innerHTML = this.itemTradeHTML(); return; }
+    if (s.pendingTarget)   { this.actionArea.innerHTML = this.targetHTML(); return; }
     let html = '';
     switch (s.phase) {
-      case 'setup':     html = this.setupHTML(); break;
-      case 'morning':   html = this.morningHTML(); break;
-      case 'afternoon': html = this.afternoonHTML(); break;
-      case 'evening':   html = this.eveningHTML(); break;
-      case 'midnight':  html = this.midnightHTML(); break;
-      case 'resolve':   html = this.resolveHTML(); break;
-      case 'gameover':  html = this.gameoverHTML(); break;
+      case 'setup':    html = this.setupHTML(); break;
+      case 'day':      html = this.dayHTML(); break;
+      case 'sleep':    html = this.sleepHTML(); break;
+      case 'resolve':  html = this.resolveHTML(); break;
+      case 'gameover': html = this.gameoverHTML(); break;
     }
     this.actionArea.innerHTML = html;
   },
 
-  // --- SETUP: rulers revealed, then auto-advances to Day 1 ---
+  // --- SETUP: rulers revealed (yours highlighted), auto-advances to Day 1 ---
   setupHTML() {
-    // Kick off the auto-advance once (the day begins on its own)
     if (!this._setupTimer) {
-      this._setupTimer = setTimeout(() => Engine.beginGame(), 3500);
+      this._setupTimer = setTimeout(() => Engine.beginGame(), 4200);
     }
+    const me = Engine.human();
     const cards = Engine.state.players.map(p => {
       const you = !p.ai;
-      return `<div style="flex:1;min-width:200px;background:rgba(0,0,0,0.5);` +
-        `border:2px solid ${you ? '#6bff8a' : p.color};border-radius:10px;padding:14px;text-align:center;">` +
-        `<div style="font-size:1em;color:${you ? '#6bff8a' : p.color};font-weight:bold;letter-spacing:2px;">` +
-          `${p.icon} ${you ? 'YOU' : p.name}</div>` +
-        `<div style="font-size:2.4em;margin:8px 0;">${p.ruler.icon}</div>` +
-        `<div style="font-size:1.1em;color:#d4af37;font-weight:bold;">${p.ruler.name}</div>` +
-        `<div style="font-size:0.85em;color:#c8b898;margin-top:6px;line-height:1.4;">${p.ruler.desc}</div>` +
+      return `<div class="ruler-reveal${you ? ' you' : ''}" style="--rc:${you ? '#6bff8a' : p.color};">` +
+        `${you ? '<div class="ruler-you-tag">⭐ YOU ⭐</div>' : ''}` +
+        `<div class="rr-who" style="color:${you ? '#6bff8a' : p.color};">${p.icon} ${you ? 'YOU' : p.name}</div>` +
+        `<div class="rr-face">${p.ruler.icon}</div>` +
+        `<div class="rr-name">${p.ruler.name}</div>` +
+        `<div class="rr-desc">${p.ruler.desc}</div>` +
       `</div>`;
     }).join('');
-    return `<h3>👑 Rulers Assigned</h3>` +
-      `<p>Each lord serves a ruler whose power shapes the game. Yours is highlighted.</p>` +
-      `<div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;">${cards}</div>` +
-      `<p style="color:#a89070;">The day begins shortly…</p>`;
+    return `<div style="text-align:center;">` +
+      `<h2 style="font-size:1.9em;color:#d4af37;letter-spacing:3px;">👑 RULERS ASSIGNED</h2>` +
+      `<p style="font-size:1.15em;margin-top:6px;">You are the <strong style="color:#6bff8a;">${me.ruler.icon} ${me.ruler.name}</strong> — ${me.ruler.desc}</p>` +
+      `<div class="ruler-grid">${cards}</div>` +
+      `<p style="color:#a89070;margin-top:10px;">Your reign begins shortly…</p></div>`;
   },
 
-  // --- MORNING (turn-based) ---
-  morningHTML() {
+  // --- DAY: intro gate, incoming offers, then your turn panel with buttons ---
+  dayHTML() {
     const s = Engine.state, me = Engine.human();
 
-    // 1) Intro gate: show MORNING, then a Start button
-    if (!s.morningStarted) {
+    if (!s.dayStarted) {
       return `<div style="text-align:center;">` +
-        `<h2 style="font-size:2.4em;color:#d4af37;letter-spacing:4px;">☀️ MORNING</h2>` +
-        `<p>One turn each — play up to 2 cards.</p>` +
-        `<button class="btn-action" onclick="Engine.beginMorningTurns()" style="margin-top:16px;">Start ▶</button>` +
+        `<h2 style="font-size:2.4em;color:#d4af37;letter-spacing:4px;">☀️ DAY ${s.day}</h2>` +
+        `<p>Trade with rivals, use items, visit the market, and hide your assassins.</p>` +
+        `<p style="color:#a89070;font-size:0.95em;margin-top:6px;">When everyone's done, choose where to sleep — and pray.</p>` +
+        `<button class="btn-action" onclick="Engine.beginDayTurns()" style="margin-top:16px;">Begin ▶</button>` +
         `</div>`;
     }
 
-    // 2) An incoming offer to YOU (always answerable, even on a bot's turn)
+    // Incoming offer to YOU (answerable even on a bot's turn)
     if (s.pendingTrade && s.pendingTrade.to === me) {
       const t = s.pendingTrade;
       return `<h3>📨 ${t.from.icon} ${t.from.name} offers you</h3>` +
@@ -71,212 +70,122 @@ Object.assign(UI, {
     }
     if (s.pendingTrade) return `<h3>⏳ ${s.pendingTrade.to.name} is deciding…</h3>`;
 
-    // 3) A bot's turn
     if (!Engine.isHumanTurn()) {
       const cur = Engine.currentPlayer();
-      return `<h3>${cur ? cur.icon + ' ' + cur.name : 'A rival'} is taking their turn...</h3>`;
+      return `<h3>${cur ? cur.icon + ' ' + cur.name : 'A rival'} is taking their turn…</h3>` +
+        this.dayToolbar(true);
     }
 
-    // 4) YOUR turn
+    // YOUR turn
     return `<h3>Your turn</h3>` +
       `<p>Plays left: <strong style="color:#6bff8a;font-size:1.3em;">${'🟢'.repeat(s.playsLeft)}${'⚪'.repeat(2 - s.playsLeft)}</strong></p>` +
-      `<p style="color:#a89070;font-size:0.95em;">Tap an item to use it, or drag a character onto a rival.</p>` +
-      `<button class="btn-action" onclick="Engine.skipTurn()" style="margin-top:12px;">Skip Turn ⏭</button>`;
+      `<p style="color:#a89070;font-size:0.95em;">Tap an item, drag a character onto a rival, or use the buttons below.</p>` +
+      this.dayToolbar(false) +
+      `<button class="btn-action" onclick="Engine.skipTurn()" style="margin-top:10px;">End Turn ⏭</button>`;
   },
 
-  // --- Merchant item-swap overlay ---
+  // Market / Map buttons — always available during the day (they pause the game)
+  dayToolbar(botTurn) {
+    const me = Engine.human();
+    return `<div class="day-toolbar">` +
+      `<button class="tool-btn market" onclick="Engine.openMarket()">🏪 Market <span>🪙${me.money}</span></button>` +
+      `<button class="tool-btn map" onclick="Engine.openMap()">🗺️ Castle Map <span>🥷${me.assassins.length}</span></button>` +
+      `</div>`;
+  },
+
+  // --- Targeted item (Poison Vial): pick a rival ---
+  targetHTML() {
+    const me = Engine.human();
+    const card = me.hand.find(c => c.uid === Engine.state.pendingTarget.cardUID);
+    const targets = Engine.aliveAI();
+    return `<h3>${card ? card.icon + ' ' + card.name : 'Choose a target'}</h3>` +
+      `<p style="color:#a89070;">Use it on which rival?</p>` +
+      `<div class="choice-grid">` +
+      targets.map(p => `<button class="choice-btn" style="border-left:4px solid ${p.color}" ` +
+        `onclick="Engine.usePoisonOn('${p.id}')">${p.icon} ${p.name} (❤️${p.health})</button>`).join('') +
+      `</div><button class="btn-icon" onclick="Engine.cancelTarget()" style="margin-top:8px;">Cancel</button>`;
+  },
+
+  // --- SLEEP: choose your bed on the castle map ---
+  sleepHTML() {
+    const me = Engine.human();
+    return `<div class="midnight-wrap">` +
+      `<h3>🛏️ Choose where YOU sleep</h3>` +
+      `<p>Hidden assassins strike for <strong style="color:#ff6b6b;">2 HP</strong> each. Need to plant more first? ` +
+      `<button class="btn-icon" onclick="Engine.openMap()">🗺️ Open Map</button></p>` +
+      this.castleMapHTML('sleep') + `</div>`;
+  },
+
+  // --- Merchant: buy a rival's item with coins ---
   itemTradeHTML() {
     const pit = Engine.state.pendingItemTrade;
     const me = Engine.human(), target = pit.target;
-
-    if (pit.giveUID && pit.wantUID) {
-      const give = me.hand.find(c => c.uid === pit.giveUID);
+    if (pit.wantUID) {
       const want = target.hand.find(c => c.uid === pit.wantUID);
-      return `<h3>🤝 Awaiting ${target.name}...</h3>` +
-        `<p>Offering ${give.icon} ${give.name} for ${want.icon} ${want.name}.</p>`;
+      return `<h3>🤝 Awaiting ${target.name}…</h3>` +
+        `<p>Offering ${pit.price}🪙 for ${want ? want.icon + ' ' + want.name : 'an item'}.</p>`;
     }
-
-    const myItems = me.hand.filter(c => c.type === 'item');
     const theirItems = target.hand.filter(c => c.type === 'item');
-    const giveBtns = myItems.map(c => `<button class="choice-btn ${this._giveSel===c.uid?'sel':''}" ` +
-      `onclick="UI.selItem('give','${c.uid}')">${c.icon} ${c.name}</button>`).join('');
-    const wantBtns = theirItems.map(c => `<button class="choice-btn ${this._wantSel===c.uid?'sel':''}" ` +
-      `onclick="UI.selItem('want','${c.uid}')">${c.icon} ${c.name}</button>`).join('');
-    const ready = this._giveSel && this._wantSel;
-    return `<h3>🧔 Merchant Trade — ${target.name}</h3>` +
-      `<p>You give:</p><div class="choice-grid">${giveBtns}</div>` +
-      `<p style="margin-top:10px;">You want:</p><div class="choice-grid">${wantBtns}</div>` +
-      `<div style="margin-top:14px;">` +
-      `<button class="btn-accept" ${ready?'':'disabled'} onclick="UI.confirmItemSwap()">Propose Swap</button>` +
-      `<button class="btn-decline" onclick="UI.cancelItemTrade()">Cancel</button></div>`;
+    const buyBtns = theirItems.map(c => {
+      const price = Engine.itemBuyPrice(c);
+      const afford = me.money >= price;
+      return `<button class="choice-btn${afford ? '' : ' locked'}" ${afford ? '' : 'disabled'} ` +
+        `onclick="UI.confirmItemBuy('${c.uid}')">${c.icon} ${c.name} — 🪙${price}</button>`;
+    }).join('') || `<p style="color:#a89070;">${target.name} has no items to sell.</p>`;
+    return `<h3>🧔 Merchant — buy from ${target.name}</h3>` +
+      `<p style="color:#a89070;">You have <strong style="color:#ffd86b;">🪙${me.money}</strong>. Pick an item to buy:</p>` +
+      `<div class="choice-grid">${buyBtns}</div>` +
+      `<div style="margin-top:14px;"><button class="btn-decline" onclick="UI.cancelItemTrade()">Cancel</button></div>`;
   },
 
-  // --- AFTERNOON (timed supply raid — spend picks on rooms) ---
-  afternoonHTML() {
-    const s = Engine.state;
-
-    // Raid finished early -> brief celebratory beat before EVENING
-    if (s.allDone) {
-      return `<div class="afternoon-wrap"><div class="afternoon-top">` +
-        `${this.afHeaderHTML(s)}</div>` +
-        `<div style="text-align:center;padding:36px 0;">` +
-        `<h2 style="font-size:2.4em;color:#6bff8a;letter-spacing:3px;text-shadow:0 0 24px rgba(107,255,138,0.6);">🏁 RAID COMPLETE</h2>` +
-        `<p style="font-size:1.4em;color:#d8c8a8;margin-top:10px;">Grabbed <strong style="color:#6bff8a;">${s.cardsEarned}</strong> — heading to the feast…</p>` +
-        `</div></div>`;
-    }
-
-    // Connecting paths between task rooms
-    const links = TASK_LINKS.map(([a, b]) => {
-      const ra = TASK_ZONES.find(z => z.id === a), rb = TASK_ZONES.find(z => z.id === b);
-      return `<line x1="${ra.x}" y1="${ra.y}" x2="${rb.x}" y2="${rb.y}" />`;
-    }).join('');
-
-    const noPicks = s.picksLeft <= 0;
-    const active = s.activeZone;
-    const rooms = TASK_ZONES.map(z => {
-      const done = s.doneZones.includes(z.id);
-      const isActive = active === z.id;
-      const spent = done || (noPicks && !isActive) || (active && !isActive);
-      const reward = this.zoneReward(z);
-      const cls = 'map-room task-node' + (done ? ' done' : '') +
-        (isActive ? ' working' : '') + (spent && !done ? ' spent' : '');
-      const onclick = (spent || done || active) ? '' : `onclick="Engine.doTask('${z.id}')"`;
-      return `<div class="${cls}" style="left:${z.x}%;top:${z.y}%;--rc:${z.color};" ${onclick}>` +
-        `<div class="mr-icon">${z.icon}</div>` +
-        `<div class="mr-name">${z.name}</div>` +
-        `<div class="tn-reward">${reward.icon} ${reward.name}</div>` +
-        (done ? `<div class="tn-check">✓</div>` : '') +
-        (isActive ? `<div class="tn-working">⚒️</div>` : '') +
-      `</div>`;
-    }).join('');
-
-    // Bottom strip: either the live work bar (mid-task) or the pick prompt
-    let footer;
-    if (active) {
-      const z = TASK_ZONES.find(x => x.id === active);
-      footer = `<div class="work-zone" onclick="Engine.workTask()">` +
-        `<div class="work-title">⚒️ ${z.task}</div>` +
-        `<div class="work-bar"><div class="work-fill" id="work-fill" ` +
-          `style="width:${s.workProgress}%;background:linear-gradient(90deg,${z.color},#fff8);"></div></div>` +
-        `<div class="work-hint">Mash <strong>SPACE</strong> or tap the bar to work! ` +
-        `<button class="btn-icon" onclick="event.stopPropagation();Engine.cancelTask()">Leave</button></div>` +
-      `</div>`;
-    } else {
-      footer = `<p class="work-hint">${noPicks ? 'Out of picks — the clock is winding down…'
-        : `Click a room to work it — <strong>${s.picksLeft}</strong> pick${s.picksLeft === 1 ? '' : 's'} left.`}</p>`;
-    }
-
-    return `<div class="afternoon-wrap">` +
-      `<div class="afternoon-top">${this.afHeaderHTML(s)}</div>` +
-      `<div class="castle-map task-map-board">` +
-        `<svg class="castle-links" viewBox="0 0 100 100" preserveAspectRatio="none">${links}</svg>` +
-        rooms +
-      `</div>` +
-      footer +
-    `</div>`;
-  },
-
-  // Cheap partial update of just the work bar while mashing
-  renderWorkBar() {
-    const el = document.getElementById('work-fill');
-    if (el) el.style.width = Engine.state.workProgress + '%';
-  },
-
-  // Top bar: timer + pick pips + cards earned
-  afHeaderHTML(s) {
-    const pips = '🔵'.repeat(Math.max(0, s.picksLeft)) +
-      '⚫'.repeat(Math.max(0, AFTERNOON_PICKS - Math.max(0, s.picksLeft)));
-    return `<div class="af-timer" id="af-timer">⏱️ ${s.timeLeft}s</div>` +
-      `<div class="af-picks">PICKS ${pips}</div>` +
-      `<div class="af-count">🃏 ${s.cardsEarned}</div>`;
-  },
-
-  // What card a room will award (for the on-room preview)
-  zoneReward(z) {
-    return CardSystem.cardById(z.cardId) || { icon: z.icon, name: z.task };
-  },
-
-  // Cheap partial update so the 1s timer doesn't rebuild the whole map
-  renderAfternoonTimer() {
-    const el = document.getElementById('af-timer');
-    if (el) {
-      const t = Engine.state.timeLeft;
-      el.textContent = `⏱️ ${t}s`;
-      el.classList.toggle('low', t <= 7);
-    }
-  },
-
-  // --- EVENING (instant cook) ---
-  eveningHTML() {
-    const s = Engine.state, me = Engine.human();
-    if (s.cook === me) {
-      return `<div style="text-align:center;">` +
-        `<h3>🍳 You're cooking tonight!</h3>` +
-        `<p>Serve clean for <strong style="color:#ffd86b;">+3🪙</strong>, or poison the feast to hurt the others.</p>` +
-        `<div style="margin-top:16px;">` +
-        `<button class="btn-accept" onclick="Engine.cook(false)">🍽️ Serve Clean (+3🪙)</button>` +
-        `<button class="btn-challenge" onclick="Engine.cook(true)">☠️ Poison the Feast</button></div>` +
-        `</div>`;
-    }
-    const c = s.cook;
-    return `<div style="text-align:center;"><h3>🎲 ${c ? c.icon + ' ' + c.name : 'A rival'} is cooking…</h3>` +
-      `<p style="color:#a89070;">Hope it isn't poisoned.</p></div>`;
-  },
-
-  // --- MIDNIGHT (castle map) ---
-  midnightHTML() {
+  // --- Castle map (shared by the Map overlay and the Sleep panel) ---
+  // mode: 'place' (hide assassins) | 'sleep' (pick a bed)
+  castleMapHTML(mode) {
     const me = Engine.human();
-    const placing = Engine.state.placing;
-    const left = me.assassins.length;
-
-    let head;
-    if (placing) {
-      head = `<h3>🌙 Hide your assassins — <span style="color:#ff6b6b;">${left} left</span></h3>` +
-        `<p>Click rooms to plant assassins. Each one hits a sleeper there for <strong style="color:#ff6b6b;">2 HP</strong>.</p>` +
-        `<button class="btn-action" onclick="Engine.donePlacing()" style="margin-bottom:10px;">` +
-        `${left > 0 ? 'Done Placing ▶' : 'Continue ▶'}</button>`;
-    } else {
-      head = `<h3>🛏️ Choose your bed</h3>` +
-        `<p>Avoid rooms with hidden assassins — each hit costs <strong style="color:#ff6b6b;">2 HP</strong>.</p>`;
-    }
-    return `<div class="midnight-wrap">${head}${this.castleMapHTML()}</div>`;
-  },
-
-  // Shared castle map used at midnight. Shows your placed assassins.
-  castleMapHTML() {
-    const me = Engine.human();
-    const placing = Engine.state.placing;
     const links = CASTLE_LINKS.map(([a, b]) => {
       const ra = CASTLE_ROOMS.find(r => r.id === a), rb = CASTLE_ROOMS.find(r => r.id === b);
-      const x1 = ra.x, y1 = ra.y, x2 = rb.x, y2 = rb.y;
-      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" />`;
+      return `<line x1="${ra.x}" y1="${ra.y}" x2="${rb.x}" y2="${rb.y}" />`;
     }).join('');
     const rooms = CASTLE_ROOMS.map(r => {
       const mine = me.placedAssassins.filter(l => l === r.id).length;
       const owner = r.home ? Engine.state.players.find(p => p.id === r.home) : null;
-      const action = placing
-        ? (me.assassins.length > 0 ? `onclick="Engine.placeAssassin('${r.id}')"` : '')
+      const placeable = mode === 'place' && me.assassins.length > 0;
+      const action = mode === 'place'
+        ? (placeable ? `onclick="Engine.placeAssassin('${r.id}')"` : '')
         : `onclick="Engine.chooseSleep('${r.id}')"`;
-      const cls = 'map-room' + (placing && me.assassins.length > 0 ? ' placeable' : '') +
-        (!placing ? ' sleepable' : '');
+      const cls = 'map-room' + (placeable ? ' placeable' : '') + (mode === 'sleep' ? ' sleepable' : '');
       const ownerTag = owner ? `<span class="mr-owner" style="color:${owner.color}">${owner.icon}</span>` : '';
       const marks = mine > 0 ? `<span class="mr-assassins">${'🥷'.repeat(mine)}</span>` : '';
       return `<div class="${cls}" style="left:${r.x}%;top:${r.y}%;" ${action}>` +
         `<div class="mr-icon">${r.icon}</div><div class="mr-name">${r.name}${ownerTag}</div>${marks}</div>`;
     }).join('');
-    return `<div class="castle-map">` +
+    return `<div class="castle-map night-map">` +
+      `<div class="night-sky">${this.starsHTML()}<div class="nm-moon">🌙</div>` +
+        `<div class="nm-fog f1"></div><div class="nm-fog f2"></div></div>` +
       `<svg class="castle-links" viewBox="0 0 100 100" preserveAspectRatio="none">${links}</svg>` +
       rooms + `</div>`;
+  },
+
+  starsHTML() {
+    let s = '';
+    const pts = [[8,12],[22,8],[34,18],[46,6],[58,14],[68,9],[78,20],[90,11],
+      [14,28],[40,30],[62,26],[86,32],[6,46],[30,52],[54,44],[74,50],[94,42]];
+    pts.forEach((p, i) => {
+      s += `<span class="nm-star" style="left:${p[0]}%;top:${p[1]}%;animation-delay:${(i % 5) * 0.4}s;"></span>`;
+    });
+    return s;
   },
 
   resolveHTML() {
     const me = Engine.human();
     const room = me.sleepLocation ? Engine.roomName(me.sleepLocation) : 'your chamber';
     return `<div class="night-scene">` +
+      `<div class="ns-stars">${this.starsHTML()}</div>` +
+      `<div class="ns-fog nf1"></div><div class="ns-fog nf2"></div>` +
       `<div class="night-moon">🌙</div>` +
-      `<div class="night-z">💤</div>` +
-      `<div class="night-room">You sleep in <strong>${room}</strong>…</div>` +
-    `</div>`;
+      `<div class="ns-bed">🛏️</div>` +
+      `<div class="night-z z1">💤</div><div class="night-z z2">💤</div><div class="night-z z3">💤</div>` +
+      `<div class="night-room">You sleep in <strong>${room}</strong>…</div></div>`;
   },
 
   gameoverHTML() {
@@ -305,16 +214,16 @@ Object.assign(UI, {
       `</div></div>`;
   },
 
-  // --- Sell flow: claim truthfully or bluff (Chef/Bodyguard/etc.) ---
+  // --- Sell flow: claim truthfully or bluff ---
   tradeStep2(cardUID, targetId) {
     const card = Engine.human().hand.find(c => c.uid === cardUID);
     if (!card) return;
     const target = Engine.state.players.find(p => p.id === targetId);
-    const sellable = CHARACTER_CARDS.filter(c => !c.free); // exclude free Merchant
+    const sellable = CHARACTER_CARDS.filter(c => !c.free);
     const opts = sellable.map(c => {
       const truth = c.id === card.id;
       const badge = truth
-        ? `<span class="claim-badge truth">✓ HONEST</span>`
+        ? `<span class="claim-badge truth">✓ HONEST (+${HONEST_BONUS}🪙)</span>`
         : `<span class="claim-badge bluff">🎭 BLUFF</span>`;
       return `<button class="claim-tile ${truth ? 'truth' : 'bluff'}" ` +
         `onclick="FX.sound('card');Engine.offerTrade('${cardUID}','${c.id}','${targetId}')">` +
@@ -324,23 +233,29 @@ Object.assign(UI, {
     }).join('');
     this.actionArea.innerHTML =
       `<h3>Offer to ${target.icon} ${target.name}</h3>` +
-      `<p style="color:#a89070;">You hold <strong>${card.icon} ${card.name}</strong> — claim it, or bluff a pricier one.</p>` +
+      `<p style="color:#a89070;">You hold <strong>${card.icon} ${card.name}</strong> — sell it HONESTLY for a bonus, or bluff a pricier one.</p>` +
       `<div class="claim-grid">${opts}</div>` +
       `<button class="btn-icon" onclick="UI.render()" style="margin-top:12px;">Cancel</button>`;
   },
 
-  // --- Merchant item-swap selection helpers ---
-  selItem(side, uid) {
-    if (side === 'give') this._giveSel = uid; else this._wantSel = uid;
-    this.renderAction();
-  },
-  confirmItemSwap() {
-    if (!this._giveSel || !this._wantSel) return;
-    Engine.proposeItemSwap(this._giveSel, this._wantSel);
-    this._giveSel = null; this._wantSel = null;
-  },
-  cancelItemTrade() {
-    this._giveSel = null; this._wantSel = null;
-    Engine.cancelItemTrade();
+  // --- Merchant buy helpers ---
+  confirmItemBuy(uid) { Engine.proposeItemBuy(uid); },
+  cancelItemTrade() { Engine.cancelItemTrade(); },
+
+  // --- Smooth phase transition overlay ---
+  transition(title, sub, done) {
+    if (Engine.state) Engine.state.busy = true;
+    const o = document.getElementById('transition-overlay');
+    let theme = 'night';
+    if (title.includes('☀️') || title.includes('DAY')) theme = 'dawn';
+    else if (title.includes('NIGHT')) theme = 'night';
+    o.className = 'theme-' + theme;
+    o.innerHTML = `<div class="transition-inner"><h1>${title}</h1><p>${sub || ''}</p></div>`;
+    if (theme === 'dawn') FX.sound('gong');
+    o.classList.add('show');
+    setTimeout(() => {
+      if (done) done();
+      o.classList.remove('show');
+    }, 1600);
   },
 });

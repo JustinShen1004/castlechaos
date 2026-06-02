@@ -11,7 +11,7 @@ const Save = {
   data: null,
 
   defaults() {
-    return { unlocked: [], stats: { plays: 0, wins: 0, bestDay: 0 }, game: null };
+    return { unlocked: [], stats: { plays: 0, wins: 0, bestDay: 0 }, game: null, tutorialSeen: false };
   },
 
   load() {
@@ -55,18 +55,21 @@ const Save = {
     this.persist();
   },
 
+  // --- First-run tutorial flag ---
+  tutorialSeen() { return !!this.data.tutorialSeen; },
+  markTutorialSeen() { this.data.tutorialSeen = true; this.persist(); },
+
   // --- In-progress game snapshot ---
-  // We persist ONE clean checkpoint: the start of each day (morning intro,
-  // before turns begin). No timers, AI callbacks, or object cross-references
-  // are live there, so a JSON round-trip + reload restores it perfectly.
+  // We persist ONE clean checkpoint: the start of each day, before turns
+  // begin (no live timers/AI callbacks), so a JSON round-trip restores it.
   hasGame() { return !!this.data.game; },
   saveGame(state) {
     if (!state) return;
-    if (state.phase !== 'morning' || state.morningStarted) return;
+    if (state.phase !== 'day' || state.dayStarted) return;
     try {
       const snap = JSON.parse(JSON.stringify(state));
-      snap.cook = null; snap.winner = null; snap.busy = false;
-      snap.pendingTrade = null; snap.pendingItemTrade = null;
+      snap.winner = null; snap.busy = false; snap.overlay = null;
+      snap.pendingTrade = null; snap.pendingItemTrade = null; snap.pendingTarget = null;
       this.data.game = snap;
       this.persist();
     } catch (e) {}

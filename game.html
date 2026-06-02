@@ -62,6 +62,48 @@ body {
 .howto-row p { color: #c8b898; line-height: 1.5; margin-top: 2px; }
 .howto-back { text-align: center; margin-top: 30px; }
 
+/* ============ WHAT'S NEW ============ */
+#whatsnew-screen { align-items: center; justify-content: center; padding: 30px 20px; overflow-y: auto; }
+.wn-card {
+  max-width: 880px; width: 100%; padding: 34px 38px 30px; text-align: center;
+  background: radial-gradient(ellipse at 50% -10%, rgba(80,52,18,0.55), rgba(0,0,0,0.6) 60%);
+  border: 2px solid #d4af37; border-radius: 22px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.55), 0 0 40px rgba(212,175,55,0.18);
+}
+.wn-badge {
+  display: inline-block; background: linear-gradient(180deg, #e0b94a, #b8902a);
+  color: #2a1a08; font-weight: bold; letter-spacing: 2px; font-size: 0.85em;
+  padding: 5px 18px; border-radius: 20px; box-shadow: 0 4px 14px rgba(212,175,55,0.4);
+}
+.wn-title {
+  color: #ffd86b; font-size: 2.6em; letter-spacing: 8px; margin: 14px 0 4px;
+  text-shadow: 0 0 30px rgba(212,175,55,0.6);
+}
+.wn-sub { color: #c8b898; letter-spacing: 1px; margin-bottom: 26px; font-style: italic; }
+.wn-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.wn-tile {
+  background: linear-gradient(180deg, rgba(40,30,14,0.85), rgba(20,14,8,0.85));
+  border: 1.5px solid #8a6a2a; border-radius: 16px; padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.wn-tile:hover {
+  transform: translateY(-5px); border-color: #ffd86b;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 0 24px rgba(212,175,55,0.35);
+}
+.wn-icon {
+  font-size: 2.6em; margin-bottom: 8px; line-height: 1;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+}
+.wn-tile strong { color: #ffe8b0; font-size: 1.08em; letter-spacing: 0.5px; margin-bottom: 6px; }
+.wn-tile p { color: #c8b898; line-height: 1.45; font-size: 0.92em; margin: 0; }
+.wn-hl { color: #ffd86b; font-weight: bold; }
+@media (max-width: 720px) { .wn-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .wn-grid { grid-template-columns: 1fr; } }
+
 /* ============ COLLECTION SCREEN ============ */
 #collection-screen { align-items: center; justify-content: flex-start; padding: 30px 20px; overflow-y: auto; }
 .collection-card {
@@ -301,12 +343,13 @@ body {
 .notif {
   text-align: center; padding: 16px 28px; border-radius: 14px;
   font-size: 1.7em; font-weight: 800; letter-spacing: 0.5px; line-height: 1.4;
-  border: 3px solid; box-shadow: 0 8px 28px rgba(0,0,0,0.55); animation: notifPop 0.35s ease-out;
+  border: 3px solid; box-shadow: 0 8px 28px rgba(0,0,0,0.55); animation: notifPop 0.9s cubic-bezier(0.22,1,0.36,1);
 }
 @keyframes notifPop {
-  0% { transform: scale(0.92); opacity: 0; }
-  60% { transform: scale(1.02); }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: translateY(-10px) scale(0.94); opacity: 0; }
+  45% { opacity: 1; }
+  70% { transform: translateY(0) scale(1.015); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 /* All updates are boxed; color signals the kind of message */
 .notif.info { background: rgba(20,32,52,0.92); border-color: #6bb6ff; color: #cfe6ff; text-shadow: 0 0 14px rgba(107,182,255,0.5); }
@@ -531,16 +574,13 @@ body {
 /* ============ PHASE COLOR THEMES ============ */
 /* Layered radial + linear gradients avoid the hard banding "lines" that a
    single 2-stop gradient shows on wide screens. */
-body[data-phase="morning"]   { background:
+body[data-phase="day"]       { background:
   radial-gradient(ellipse 130% 100% at 50% -20%, #c98a4a 0%, transparent 65%),
   linear-gradient(180deg, #8a5a2a 0%, #6b4420 30%, #4a2e16 60%, #2a1a0c 85%, #1a1008 100%); }
-body[data-phase="afternoon"] { background:
-  radial-gradient(ellipse 120% 90% at 50% 0%, #2a6a8a 0%, transparent 55%),
-  linear-gradient(180deg, #123040 0%, #0a1825 55%, #06101a 100%); }
-body[data-phase="evening"]   { background:
-  radial-gradient(ellipse 120% 90% at 50% 0%, #8a3a2a 0%, transparent 55%),
-  linear-gradient(180deg, #3a1820 0%, #1a0c14 55%, #0d0610 100%); }
-body[data-phase="midnight"]  { background:
+body[data-phase="sleep"]     { background:
+  radial-gradient(ellipse 120% 90% at 50% 0%, #2a2a6a 0%, transparent 55%),
+  linear-gradient(180deg, #10103a 0%, #08081f 55%, #04040d 100%); }
+body[data-phase="resolve"]   { background:
   radial-gradient(ellipse 120% 90% at 50% 0%, #2a2a6a 0%, transparent 55%),
   linear-gradient(180deg, #10103a 0%, #08081f 55%, #04040d 100%); }
 body[data-phase="setup"]     { background:
@@ -548,9 +588,9 @@ body[data-phase="setup"]     { background:
   linear-gradient(180deg, #221634 0%, #100a1c 60%, #0a0613 100%); }
 body { transition: background 1s ease; background-attachment: fixed; }
 .game-header { transition: border-color 0.6s; }
-body[data-phase="afternoon"] .game-header { border-bottom-color: #2a6a8a; }
-body[data-phase="evening"]   .game-header { border-bottom-color: #8a3a4a; }
-body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
+body[data-phase="day"]     .game-header { border-bottom-color: #8a6a2a; }
+body[data-phase="sleep"]   .game-header { border-bottom-color: #3a3a8a; }
+body[data-phase="resolve"] .game-header { border-bottom-color: #3a3a8a; }
 
 /* ============ PHASE TRANSITION OVERLAY ============ */
 #transition-overlay {
@@ -573,14 +613,10 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
 }
 .transition-inner p { font-size: 1.3em; color: #c8b898; letter-spacing: 2px; }
 
-/* ============ AFTERNOON / MIDNIGHT MODE ============ */
-#game-screen.afternoon-mode .opponents-section,
-#game-screen.afternoon-mode .player-hand,
-#game-screen.afternoon-mode #notification-banner { display: none; }
-#game-screen.afternoon-mode .player-section { padding: 10px 32px; }
-/* Midnight hides the hand (assassins are placed on the map) but keeps opponents + banner */
-#game-screen.midnight-mode .player-hand { display: none; }
-#game-screen.midnight-mode .player-section { padding: 10px 32px; }
+/* ============ NIGHT MODE (sleep + resolve) ============ */
+/* The night hides the hand (assassins are on the map) but keeps opponents + banner */
+#game-screen.night-mode .player-hand { display: none; }
+#game-screen.night-mode .player-section { padding: 10px 32px; }
 /* Game over: clear the board so the end screen owns the stage */
 #game-screen.gameover-mode .opponents-section,
 #game-screen.gameover-mode .player-section,
@@ -609,17 +645,23 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
   font-size: 1.3em; font-weight: bold; gap: 12px;
 }
 .af-timer {
-  background: rgba(0,0,0,0.5); border: 2px solid #6bb6ff; color: #b6d8ff;
-  border-radius: 10px; padding: 8px 18px; letter-spacing: 1px; min-width: 110px; text-align: center;
+  background: linear-gradient(180deg, rgba(20,50,70,0.85), rgba(8,24,38,0.85));
+  border: 2px solid #6bb6ff; color: #d6ecff;
+  border-radius: 12px; padding: 8px 18px; letter-spacing: 1px; min-width: 110px; text-align: center;
+  box-shadow: 0 0 16px rgba(107,182,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
-.af-timer.low { border-color: #ff6b6b; color: #ff9b9b; animation: pulse-glow 0.8s infinite; }
+.af-timer.low { border-color: #ff6b6b; color: #ffd0d0; animation: pulse-glow 0.8s infinite; box-shadow: 0 0 22px rgba(255,107,107,0.6); }
 .af-picks {
-  background: rgba(0,0,0,0.5); border: 2px solid #d4af37; color: #ffd86b;
-  border-radius: 10px; padding: 8px 18px; letter-spacing: 2px; font-size: 0.95em;
+  background: linear-gradient(180deg, rgba(60,48,10,0.85), rgba(30,22,6,0.85));
+  border: 2px solid #d4af37; color: #ffd86b;
+  border-radius: 12px; padding: 8px 18px; letter-spacing: 2px; font-size: 0.95em;
+  box-shadow: 0 0 16px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .af-count {
-  background: rgba(0,0,0,0.5); border: 2px solid #6bff8a; color: #9bffb5;
-  border-radius: 10px; padding: 8px 18px; min-width: 70px; text-align: center;
+  background: linear-gradient(180deg, rgba(16,56,30,0.85), rgba(8,30,16,0.85));
+  border: 2px solid #6bff8a; color: #b6ffc8;
+  border-radius: 12px; padding: 8px 18px; min-width: 70px; text-align: center;
+  box-shadow: 0 0 16px rgba(107,255,138,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .task-map {
@@ -651,38 +693,69 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
 
 .work-zone {
   text-align: center; min-height: 70px; cursor: pointer; user-select: none;
-  background: rgba(0,0,0,0.4); border: 2px solid #2a6a8a; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(20,44,60,0.7), rgba(8,22,34,0.7));
+  border: 2px solid #6bbfe0; border-radius: 16px;
   padding: 14px 18px; max-width: 560px; margin: 0 auto;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
 }
-.work-title { font-size: 1.3em; font-weight: 800; color: #fff; letter-spacing: 1px; margin-bottom: 8px; }
+.work-zone:active { transform: scale(0.99); }
+.work-title { font-size: 1.3em; font-weight: 800; color: #fff; letter-spacing: 1px; margin-bottom: 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
 .work-bar {
-  height: 30px; background: #1a1a2a; border-radius: 16px; overflow: hidden;
+  position: relative; height: 32px; background: #14141f; border-radius: 16px; overflow: hidden;
   border: 2px solid #4a3a2a; max-width: 480px; margin: 0 auto;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.7);
 }
-.work-fill { height: 100%; border-radius: 16px; transition: width 0.08s; box-shadow: 0 0 14px rgba(255,255,255,0.4); }
+.work-fill {
+  height: 100%; border-radius: 16px; transition: width 0.08s;
+  box-shadow: 0 0 16px rgba(255,255,255,0.5);
+  background-size: 28px 28px;
+  animation: work-stripe 0.6s linear infinite;
+}
+.work-fill::after {
+  content: ''; position: absolute; inset: 0; border-radius: 16px;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 10px, transparent 10px 20px);
+}
+@keyframes work-stripe { from { background-position: 0 0; } to { background-position: 28px 0; } }
 .work-hint { margin-top: 10px; font-size: 1.15em; color: #e8d4a8; }
 .work-hint strong { color: #ffd86b; font-size: 1.25em; }
 
 /* ============ NIGHT SCENE (resolve narration) ============ */
 .night-scene {
-  position: relative; text-align: center; padding: 30px 0 40px; min-height: 240px;
+  position: relative; text-align: center; padding: 30px 0 40px; min-height: 280px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  overflow: hidden; border-radius: 18px;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 10%, rgba(150,160,255,0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #0c0c2c 0%, #08081c 55%, #050512 100%);
+  box-shadow: inset 0 0 70px rgba(0,0,0,0.7);
 }
+.ns-stars { position: absolute; inset: 0; pointer-events: none; }
+.ns-fog {
+  position: absolute; bottom: -30%; height: 70%; width: 70%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(120,120,190,0.12) 0%, transparent 70%);
+  filter: blur(10px); pointer-events: none;
+}
+.ns-fog.nf1 { left: -15%; animation: nm-fog-drift 20s ease-in-out infinite; }
+.ns-fog.nf2 { right: -18%; animation: nm-fog-drift 28s ease-in-out infinite reverse; }
 .night-moon {
-  font-size: 5em; filter: drop-shadow(0 0 30px rgba(180,200,255,0.7));
+  font-size: 5em; filter: drop-shadow(0 0 30px rgba(180,200,255,0.7)); position: relative; z-index: 2;
   animation: moonfloat 4s ease-in-out infinite;
 }
 @keyframes moonfloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.ns-bed { font-size: 2.6em; position: relative; z-index: 2; margin-top: 4px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)); }
 .night-z {
-  font-size: 2em; opacity: 0.8; animation: zfloat 2.4s ease-in-out infinite;
+  position: absolute; font-size: 1.8em; opacity: 0; z-index: 2;
+  animation: zfloat 2.6s ease-in-out infinite;
 }
+.night-z.z1 { left: 56%; top: 44%; animation-delay: 0s; }
+.night-z.z2 { left: 60%; top: 40%; font-size: 1.4em; animation-delay: 0.8s; }
+.night-z.z3 { left: 64%; top: 36%; font-size: 1.1em; animation-delay: 1.6s; }
 @keyframes zfloat {
   0% { opacity: 0; transform: translateY(6px) scale(0.8); }
   40% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateY(-18px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-22px) scale(1.1); }
 }
-.night-room { font-size: 1.3em; color: #b6c8e8; letter-spacing: 1px; margin-top: 6px; }
+.night-room { font-size: 1.3em; color: #b6c8e8; letter-spacing: 1px; margin-top: 10px; position: relative; z-index: 2; }
 .night-room strong { color: #d4af37; }
 
 /* ============ SPINNER (wait for others) ============ */
@@ -700,6 +773,37 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
   margin: 10px auto 0; background: rgba(0,0,0,0.35);
   border: 2px solid #3a3a6a; border-radius: 16px;
 }
+/* Night map: deep moody sky, stars, drifting fog, glowing castle */
+.night-map {
+  overflow: hidden; border-color: #4a4a8a;
+  background:
+    radial-gradient(ellipse 70% 50% at 78% 8%, rgba(150,160,255,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 70% at 50% 120%, rgba(40,30,70,0.6) 0%, transparent 60%),
+    linear-gradient(180deg, #0e0e2e 0%, #0a0a22 45%, #070716 100%);
+  box-shadow: inset 0 0 70px rgba(0,0,0,0.7), 0 0 36px rgba(60,60,140,0.4);
+}
+.night-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+.nm-moon {
+  position: absolute; top: 5%; right: 8%; font-size: 3.4em;
+  filter: drop-shadow(0 0 26px rgba(180,200,255,0.8)); animation: moonfloat 5s ease-in-out infinite;
+}
+.nm-star {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  background: #eef2ff; box-shadow: 0 0 6px 1px rgba(220,230,255,0.9);
+  animation: nm-twinkle 2.4s ease-in-out infinite;
+}
+@keyframes nm-twinkle { 0%,100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.1); } }
+.nm-fog {
+  position: absolute; height: 60%; width: 60%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(120,120,180,0.10) 0%, transparent 70%);
+  filter: blur(8px);
+}
+.nm-fog.f1 { bottom: -20%; left: -10%; animation: nm-fog-drift 22s ease-in-out infinite; }
+.nm-fog.f2 { bottom: -25%; right: -15%; animation: nm-fog-drift 30s ease-in-out infinite reverse; }
+@keyframes nm-fog-drift { 0%,100% { transform: translateX(0); } 50% { transform: translateX(40px); } }
+.night-map .castle-links { z-index: 2; }
+.night-map .castle-links line { stroke: rgba(150,160,240,0.5); animation: pathflow 1.8s linear infinite; }
+.night-map .map-room { z-index: 2; }
 .castle-links { position: absolute; inset: 0; width: 100%; height: 100%; }
 .castle-links line { stroke: rgba(150,150,220,0.35); stroke-width: 0.5; stroke-dasharray: 2 2; }
 .map-room {
@@ -718,19 +822,43 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
 
 /* ============ AFTERNOON TASK MAP (reuses castle-map base) ============ */
 .task-map-board {
-  max-width: 1100px; height: 600px; border: 3px solid #2a6a8a;
+  max-width: 1100px; height: 600px; border: 3px solid #6bbfe0; overflow: hidden;
   background:
-    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(42,106,138,0.18) 0%, transparent 70%),
-    repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 14px, transparent 14px 28px),
-    linear-gradient(180deg, #122430 0%, #0a161e 100%);
-  box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 0 30px rgba(42,106,138,0.25);
+    radial-gradient(ellipse 50% 40% at 50% 48%, rgba(120,200,150,0.18) 0%, transparent 70%),
+    repeating-linear-gradient(64deg, rgba(255,255,255,0.03) 0 18px, transparent 18px 38px),
+    linear-gradient(180deg, #7ec0e6 0%, #6fb0d8 30%, #3f7a52 30%, #2f6342 62%, #244e34 100%);
+  box-shadow: inset 0 0 80px rgba(10,30,40,0.45), 0 0 36px rgba(110,180,220,0.35);
 }
 .task-map-board::before {
-  content: '⚔️ CASTLE GROUNDS'; position: absolute; top: 10px; left: 50%;
+  content: '⚔️ CASTLE GROUNDS'; position: absolute; top: 10px; left: 50%; z-index: 3;
   transform: translateX(-50%); font-size: 0.8em; letter-spacing: 4px;
-  color: rgba(180,210,230,0.4); font-weight: bold; pointer-events: none;
+  color: rgba(255,255,255,0.7); font-weight: bold; pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+/* Sky decoration layer behind the rooms */
+.af-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+.af-sun {
+  position: absolute; top: 6%; right: 9%; width: 90px; height: 90px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #fff7d6 0%, #ffe27a 45%, #ffcf4a 70%, rgba(255,207,74,0) 72%);
+  box-shadow: 0 0 60px 20px rgba(255,224,122,0.55); animation: af-sun-glow 4s ease-in-out infinite;
+}
+@keyframes af-sun-glow { 0%,100% { transform: scale(1); opacity: 0.95; } 50% { transform: scale(1.06); opacity: 1; } }
+.af-cloud { position: absolute; font-size: 3.2em; opacity: 0.85; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); }
+.af-cloud.c1 { top: 8%;  left: -12%; animation: af-drift 26s linear infinite; }
+.af-cloud.c2 { top: 18%; left: -20%; font-size: 2.4em; opacity: 0.7; animation: af-drift 38s linear infinite 6s; }
+.af-cloud.c3 { top: 3%;  left: -30%; font-size: 4em; opacity: 0.6; animation: af-drift 48s linear infinite 12s; }
+@keyframes af-drift { from { transform: translateX(0); } to { transform: translateX(160vw); } }
+.af-bird { position: absolute; font-size: 1.1em; color: rgba(20,30,40,0.55); }
+.af-bird.b1 { top: 22%; left: -8%; animation: af-fly 18s linear infinite 2s; }
+.af-bird.b2 { top: 27%; left: -14%; animation: af-fly 18s linear infinite 3.5s; }
+@keyframes af-fly {
+  from { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(60vw) translateY(-14px); }
+  to { transform: translateX(120vw) translateY(0); }
 }
 /* Glowing animated patrol routes between rooms */
+.task-map-board .castle-links { z-index: 2; }
+.task-map-board .map-room { z-index: 2; }
 .task-map-board .castle-links line {
   stroke: rgba(120,190,230,0.5); stroke-width: 0.7; stroke-dasharray: 3 3;
   animation: pathflow 1.2s linear infinite;
@@ -831,6 +959,173 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
   40% { transform: scale(1.18) rotate(-3deg); box-shadow: 0 0 30px rgba(212,175,55,0.8); }
   100% { transform: scale(1); }
 }
+
+/* ============ FIRST-RUN TUTORIAL (coach-marks) ============ */
+#tutorial-overlay {
+  position: fixed; inset: 0; z-index: 700; pointer-events: none;
+  opacity: 0; transition: opacity 0.3s ease;
+}
+#tutorial-overlay.show { opacity: 1; pointer-events: auto; }
+/* The dim is painted by a huge transparent box-shadow around the spotlight hole,
+   so the targeted element stays bright while everything else darkens. */
+.tut-hole {
+  position: absolute; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 4px rgba(212,175,55,0.9), 0 0 28px 6px rgba(212,175,55,0.6),
+    0 0 0 9999px rgba(4,3,12,0.82);
+  animation: tut-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tut-pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(212,175,55,0.9), 0 0 24px 4px rgba(212,175,55,0.5), 0 0 0 9999px rgba(4,3,12,0.82); }
+  50% { box-shadow: 0 0 0 4px rgba(255,222,107,1), 0 0 40px 10px rgba(212,175,55,0.8), 0 0 0 9999px rgba(4,3,12,0.82); }
+}
+/* When there is no target the whole screen dims via this fallback layer */
+#tutorial-overlay.show:not(:has(.tut-hole))::before {
+  content: ''; position: absolute; inset: 0; background: rgba(4,3,12,0.82);
+}
+.tut-tip {
+  position: absolute; max-width: 380px; width: max-content;
+  background: linear-gradient(180deg, #241a30, #160f1f);
+  border: 2px solid #d4af37; border-radius: 16px; padding: 18px 20px;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.25);
+  animation: tut-pop 0.34s cubic-bezier(0.2,1.3,0.5,1);
+}
+@keyframes tut-pop { 0% { opacity: 0; scale: 0.85; } 100% { opacity: 1; scale: 1; } }
+.tut-title { font-size: 1.35em; color: #ffd86b; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; }
+.tut-body { font-size: 1.02em; color: #e8d8c0; line-height: 1.55; }
+.tut-body strong { color: #ffd86b; }
+.tut-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.tut-dots { display: flex; gap: 7px; }
+.tut-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(212,175,55,0.3); transition: all 0.2s; }
+.tut-dot.on { background: #ffd86b; box-shadow: 0 0 8px rgba(255,216,107,0.8); transform: scale(1.25); }
+.tut-btns { display: flex; gap: 8px; }
+.tut-skip {
+  background: transparent; border: 1px solid #6a5a4a; color: #a89070;
+  border-radius: 10px; padding: 8px 14px; cursor: pointer; font-family: inherit; font-size: 0.95em;
+}
+.tut-skip:hover { border-color: #a89070; color: #c8b898; }
+.tut-next {
+  background: linear-gradient(180deg, #e0b94a, #b8902a); border: none; color: #2a1a08;
+  border-radius: 10px; padding: 8px 18px; cursor: pointer; font-family: inherit;
+  font-weight: bold; font-size: 0.98em; letter-spacing: 0.5px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+}
+.tut-next:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+/* ============ SHOP (morning market) ============ */
+.shop-wrap { width: 100%; max-width: 900px; margin: 0 auto; text-align: center; }
+.shop-head {
+  display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.shop-head h2 {
+  font-size: 2em; letter-spacing: 4px; color: #ffd86b;
+  text-shadow: 0 0 26px rgba(212,175,55,0.55);
+}
+.shop-purse {
+  background: rgba(0,0,0,0.45); border: 2px solid #d4af37; color: #ffd86b;
+  border-radius: 12px; padding: 6px 16px; font-size: 1.2em;
+}
+.shop-tabs { display: flex; justify-content: center; gap: 10px; margin: 14px 0 18px; flex-wrap: wrap; }
+.shop-tab {
+  background: rgba(0,0,0,0.4); border: 2px solid #6a5a3a; color: #c8b898;
+  border-radius: 12px; padding: 9px 20px; cursor: pointer; font-family: inherit;
+  font-size: 1.05em; letter-spacing: 1px; transition: all 0.15s;
+}
+.shop-tab:hover { border-color: #d4af37; color: #ffd86b; }
+.shop-tab.on {
+  background: linear-gradient(180deg, #e0b94a, #b8902a); color: #2a1a08;
+  border-color: #ffd86b; font-weight: bold; box-shadow: 0 0 18px rgba(212,175,55,0.5);
+}
+.shop-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px;
+  margin-bottom: 22px;
+}
+.shop-item {
+  background: linear-gradient(180deg, rgba(40,30,14,0.9), rgba(24,18,8,0.9));
+  border: 2px solid #8a6a2a; border-radius: 16px; padding: 16px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.shop-item:not(.locked):hover {
+  transform: translateY(-4px); border-color: #ffd86b;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.5), 0 0 22px rgba(212,175,55,0.4);
+}
+.shop-item.locked { opacity: 0.5; filter: grayscale(0.5); }
+.shop-art { font-size: 2.8em; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); }
+.shop-name { font-size: 1.15em; font-weight: bold; color: #ffe8b0; letter-spacing: 0.5px; }
+.shop-desc { font-size: 0.85em; color: #c8b898; line-height: 1.35; min-height: 34px; }
+.shop-buy {
+  margin-top: 4px; background: linear-gradient(180deg, #e0b94a, #b8902a); border: none;
+  color: #2a1a08; border-radius: 10px; padding: 8px 18px; cursor: pointer;
+  font-family: inherit; font-weight: bold; font-size: 1.05em; letter-spacing: 0.5px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.shop-buy:not(:disabled):hover { filter: brightness(1.12); transform: translateY(-1px); }
+.shop-buy:disabled { cursor: not-allowed; }
+.shop-buy.poor { background: #5a4a3a; color: #9a8a7a; }
+.shop-done { margin-top: 4px; }
+
+/* ============ FULLSCREEN OVERLAYS (Market / Map) ============ */
+#game-overlay {
+  position: fixed; inset: 0; z-index: 600; display: none;
+  align-items: center; justify-content: center; padding: 24px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(40,28,60,0.96), rgba(6,4,14,0.985));
+  backdrop-filter: blur(3px);
+}
+#game-overlay.open { display: flex; animation: ov-fade 0.28s ease-out; }
+@keyframes ov-fade { from { opacity: 0; } to { opacity: 1; } }
+.overlay-panel {
+  width: 100%; max-width: 960px; max-height: 92vh; overflow-y: auto;
+  background: linear-gradient(180deg, rgba(28,20,40,0.96), rgba(14,9,22,0.98));
+  border: 2px solid #d4af37; border-radius: 20px; padding: 22px 26px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.7), 0 0 40px rgba(212,175,55,0.2);
+  text-align: center; animation: ov-pop 0.34s cubic-bezier(0.2,1.2,0.4,1);
+}
+@keyframes ov-pop { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.map-panel .castle-map { margin-left: auto; margin-right: auto; }
+
+/* ============ DAY TOOLBAR (Market / Map buttons) ============ */
+.day-toolbar { display: flex; gap: 12px; justify-content: center; margin: 14px 0 4px; flex-wrap: wrap; }
+.tool-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, rgba(40,30,58,0.9), rgba(22,16,34,0.9));
+  border: 2px solid #6a5a8a; color: #e8d8f0; border-radius: 14px;
+  padding: 11px 20px; cursor: pointer; font-family: inherit; font-size: 1.08em;
+  font-weight: bold; letter-spacing: 0.5px; transition: all 0.15s;
+}
+.tool-btn span {
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 2px 9px;
+  font-size: 0.85em; color: #ffd86b;
+}
+.tool-btn.market:hover { border-color: #ffd86b; box-shadow: 0 0 20px rgba(212,175,55,0.45); transform: translateY(-2px); }
+.tool-btn.map:hover { border-color: #ff8a8a; box-shadow: 0 0 20px rgba(255,107,107,0.4); transform: translateY(-2px); }
+
+/* ============ RULER REVEAL (setup) ============ */
+.ruler-grid { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 18px 0; }
+.ruler-reveal {
+  position: relative; flex: 1; min-width: 190px; max-width: 240px;
+  background: rgba(0,0,0,0.45); border: 2px solid var(--rc); border-radius: 14px;
+  padding: 16px 12px; animation: ruler-rise 0.6s ease-out backwards;
+}
+.ruler-reveal.you {
+  box-shadow: 0 0 30px rgba(107,255,138,0.55); border-width: 3px;
+  animation: ruler-rise 0.6s ease-out backwards, you-glow 1.8s ease-in-out infinite 0.6s;
+}
+@keyframes ruler-rise { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes you-glow { 0%,100% { box-shadow: 0 0 26px rgba(107,255,138,0.45); } 50% { box-shadow: 0 0 40px rgba(107,255,138,0.8); } }
+.ruler-you-tag {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: #6bff8a; color: #07260f; font-weight: bold; font-size: 0.78em;
+  letter-spacing: 1px; padding: 3px 12px; border-radius: 12px;
+}
+.rr-who { font-weight: bold; letter-spacing: 2px; font-size: 1em; }
+.rr-face { font-size: 2.8em; margin: 8px 0; }
+.rr-name { font-size: 1.15em; color: #d4af37; font-weight: bold; }
+.rr-desc { font-size: 0.86em; color: #c8b898; margin-top: 6px; line-height: 1.4; }
+.ruler-tag {
+  display: inline-block; background: #6bff8a; color: #07260f; font-weight: bold;
+  font-size: 0.78em; padding: 1px 8px; border-radius: 8px; letter-spacing: 0.5px; margin-right: 4px;
+}
 </style>
 </head>
 <body>
@@ -844,6 +1139,7 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
     <button class="btn-primary" onclick="startGame()">NEW GAME</button>
     <button class="btn-secondary" onclick="showCollection()">📜 COLLECTION</button>
     <button class="btn-secondary" onclick="showHowTo()">HOW TO PLAY</button>
+    <button class="btn-secondary" onclick="showWhatsNew()">📰 WHAT'S NEW</button>
   </div>
 </div>
 
@@ -860,11 +1156,29 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
   <div class="howto-card">
     <h2 class="howto-title">HOW TO PLAY</h2>
     <div class="howto-rows">
-      <div class="howto-row"><span class="ht-icon">☀️</span><div><strong>Morning</strong><p>Sell cards to rivals. Claim honest — or bluff a pricier one for coins.</p></div></div>
-      <div class="howto-row"><span class="ht-icon">🌤️</span><div><strong>Afternoon</strong><p>Supply raid — grab 3 of 6 castle rooms before the timer ends. Choose wisely!</p></div></div>
-      <div class="howto-row"><span class="ht-icon">🌅</span><div><strong>Evening</strong><p>The chosen cook serves clean (+3🪙) or poisons everyone else.</p></div></div>
-      <div class="howto-row"><span class="ht-icon">🌙</span><div><strong>Midnight</strong><p>Hide assassins, then pick a bed. Each assassin hits for 2 HP.</p></div></div>
-      <div class="howto-row"><span class="ht-icon">⚔️</span><div><strong>Challenge</strong><p>Catch a bluff: liar loses 2🪙. Wrongly accuse: you lose 2🪙.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">🎯</span><div><strong>Goal</strong><p>Outlast your rivals over the nights — be the last ruler standing. Most games run about 5 days.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">☀️</span><div><strong>Day — trade</strong><p>Take turns. Sell character cards to rivals: an HONEST sale pays you a +2🪙 bonus, or bluff a pricier one to scam them.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">🧔</span><div><strong>Merchant</strong><p>Play it free to BUY a rival's item with coins. Use 🧪/💰 items on yourself; aim ☠️ Poison at a rival.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">🏪</span><div><strong>Market & 🗺️ Map</strong><p>Open any time during the day (pauses play). Market: spend coins on buffs, assassins, rare cards. Map: hide your 🥷 assassins in rooms.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">🌙</span><div><strong>Night</strong><p>Choose where YOU sleep. Assassins hidden in your room hit for 2 HP each. Then dawn — and poison — arrives.</p></div></div>
+      <div class="howto-row"><span class="ht-icon">⚔️</span><div><strong>Challenge</strong><p>Catch a bluff: liar loses coins. Wrongly accuse an honest seller: you lose 2🪙.</p></div></div>
+    </div>
+    <div class="howto-back"><button class="btn-secondary" onclick="showMenu()">← BACK</button></div>
+  </div>
+</div>
+
+<div id="whatsnew-screen" class="screen">
+  <div class="wn-card">
+    <div class="wn-badge">✨ UPDATE ✨</div>
+    <h2 class="wn-title">WHAT'S NEW</h2>
+    <p class="wn-sub">The castle has changed — here's what's fresh.</p>
+    <div class="wn-grid">
+      <div class="wn-tile"><div class="wn-icon">⚡</div><strong>Streamlined Flow</strong><p>No more afternoon raid or cooking feast — a smooth loop: trade by day, sleep at night, repeat.</p></div>
+      <div class="wn-tile"><div class="wn-icon">🤝</div><strong>Honesty Pays</strong><p>Selling a character card honestly earns the seller a <span class="wn-hl">+2🪙</span> bonus on top of the price.</p></div>
+      <div class="wn-tile"><div class="wn-icon">🏪</div><strong>Market & Map Anytime</strong><p>Open the Market or Castle Map whenever you like — they pause the game so you act on your schedule.</p></div>
+      <div class="wn-tile"><div class="wn-icon">☠️</div><strong>Poison Vial</strong><p>Poison a rival for <span class="wn-hl">2 HP</span> at next dawn. The Witch shrugs it off — clearly shown.</p></div>
+      <div class="wn-tile"><div class="wn-icon">🃏</div><strong>Jester · 🧙 Wizard · 🌿 Druid</strong><p>Jester swaps hands on a clean bluff, Wizard strikes −2/+1, Druid grants +1 max HP. Bots use items too!</p></div>
+      <div class="wn-tile"><div class="wn-icon">⚖️</div><strong>Rebalanced</strong><p>Bigger life: everyone starts at <span class="wn-hl">10 HP</span>, the Giant at <span class="wn-hl">15</span>, with fuller starting hands.</p></div>
     </div>
     <div class="howto-back"><button class="btn-secondary" onclick="showMenu()">← BACK</button></div>
   </div>
@@ -901,6 +1215,7 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
 <div id="toast-container"></div>
 <div id="card-modal"></div>
 <div id="transition-overlay"></div>
+<div id="tutorial-overlay"></div>
 <div id="fx-flash"></div>
 <div id="fx-layer"></div>
 <script src="data.js"></script>
@@ -909,6 +1224,8 @@ body[data-phase="midnight"]  .game-header { border-bottom-color: #3a3a8a; }
 <script src="fx.js"></script>
 <script src="game-engine.js"></script>
 <script src="trade-merchant.js"></script>
+<script src="shop.js"></script>
+<script src="tutorial.js"></script>
 <script src="ui.js"></script>
 <script src="ui-actions.js"></script>
 <script src="game.js"></script>

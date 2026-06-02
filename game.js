@@ -9,6 +9,7 @@ function showScreen(id) {
 
 function showMenu()  { showScreen('menu-screen'); refreshMenu(); }
 function showHowTo() { showScreen('howto-screen'); }
+function showWhatsNew() { showScreen('whatsnew-screen'); }
 function showCollection() { showScreen('collection-screen'); UI.renderCollection(); }
 
 // Show/hide the Continue button based on whether a saved game exists
@@ -22,8 +23,8 @@ function startGame() {
   if (typeof Save !== 'undefined') Save.clearGame(); // fresh game
   showScreen('game-screen');
   UI.init();
-  Engine.init();
-  Engine.startMorning(); // skip the ruler-reveal setup phase — go straight to Day 1
+  UI._setupTimer = null; // allow the ruler-reveal auto-advance to fire again
+  Engine.init();         // shows the ruler-reveal setup, which auto-advances to Day 1
   UI.render();
 }
 
@@ -34,16 +35,6 @@ function continueGame() {
   UI.init();
   if (!Engine.resume()) { startGame(); }
 }
-
-// SPACE drives the afternoon "work the room" mini-game
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' || e.key === ' ') {
-    if (Engine.state && Engine.state.phase === 'afternoon' && Engine.state.activeZone) {
-      e.preventDefault();
-      Engine.workTask();
-    }
-  }
-});
 
 // Refresh menu state on first load
 refreshMenu();
