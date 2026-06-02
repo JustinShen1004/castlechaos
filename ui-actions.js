@@ -122,13 +122,18 @@ Object.assign(UI, {
       `</div><button class="btn-icon" onclick="Engine.cancelAbility()" style="margin-top:8px;">Cancel</button>`;
   },
 
-  // --- SLEEP: choose your bed on the castle map ---
+  // --- SLEEP: choose your bed on the castle map (fullscreen) ---
   sleepHTML() {
     const me = Engine.human();
-    return `<div class="midnight-wrap">` +
+    const placed = me.placedAssassins.length;
+    const gate = placed === 0
+      ? `<p class="sleep-gate">⚠️ You must hide at least one 🥷 assassin before you can sleep. ` +
+        `<button class="btn-icon" onclick="Engine.openMap()">🗺️ Open Map</button></p>`
+      : `<p>Hidden assassins strike for <strong style="color:#ff6b6b;">2 HP</strong> each. ` +
+        `Need to plant more? <button class="btn-icon" onclick="Engine.openMap()">🗺️ Open Map</button></p>`;
+    return `<div class="midnight-wrap sleep-fullscreen">` +
       `<h3>🛏️ Choose where YOU sleep</h3>` +
-      `<p>Hidden assassins strike for <strong style="color:#ff6b6b;">2 HP</strong> each. Need to plant more first? ` +
-      `<button class="btn-icon" onclick="Engine.openMap()">🗺️ Open Map</button></p>` +
+      gate +
       this.castleMapHTML('sleep') + `</div>`;
   },
 

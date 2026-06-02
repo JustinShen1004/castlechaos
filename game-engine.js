@@ -96,6 +96,11 @@ const Engine = {
   notify(msg, type = 'info') {
     this.state.notification = { msg, type };
   },
+  // Private notify: only surfaces to the banner when the affected player is
+  // the human. Rivals' own item/ability use stays hidden & stealthy.
+  notifyMine(player, msg, type = 'info') {
+    if (player === this.human()) this.notify(msg, type);
+  },
   // Back-compat: older calls use log(); route them to the banner.
   log(msg) { this.notify(msg, 'info'); },
 
@@ -398,16 +403,16 @@ const Engine = {
 
   applyCharacterEffect(buyer, seller, card) {
     const buyerIsHuman = buyer === this.human();
-    if (card.effect === 'heal') { buyer.health += card.value; if (buyerIsHuman) FX.event('heal'); else FX.sound('heal'); }
-    else if (card.effect === 'shield') { this.giveShield(buyer, card.value || 0.4); if (buyerIsHuman) FX.event('shield'); else FX.sound('shield'); }
-    else if (card.effect === 'money') { buyer.money += card.value; if (buyerIsHuman) FX.event('coins'); else FX.sound('coins'); }
-    else if (card.effect === 'draw') { for (let i = 0; i < card.value; i++) this.drawInto(buyer); FX.sound('card'); }
+    const sellerIsHuman = seller === this.human();
+    if (card.effect === 'heal') { buyer.health += card.value; if (buyerIsHuman) FX.event('heal'); }
+    else if (card.effect === 'shield') { this.giveShield(buyer, card.value || 0.4); if (buyerIsHuman) FX.event('shield'); }
+    else if (card.effect === 'money') { buyer.money += card.value; if (buyerIsHuman) FX.event('coins'); }
+    else if (card.effect === 'draw') { for (let i = 0; i < card.value; i++) this.drawInto(buyer); if (buyerIsHuman || sellerIsHuman) FX.sound('card'); }
     else if (card.effect === 'forest') {
-      // Druid — Forest's Blessing: +1 max HP and heal `value`
       buyer.maxHealth += 1;
       buyer.health += card.value;
       if (buyerIsHuman) { FX.event('heal'); FX.float('🌿 Forest\'s Blessing', '#6bff8a'); }
-      else FX.sound('heal');
+      else if (sellerIsHuman) FX.sound('heal');
     }
   },
 
@@ -418,19 +423,17 @@ const Engine = {
     const toHuman = to === this.human();
     if (claim.bluffSpecial === 'swap_hands') {
       const tmp = from.hand; from.hand = to.hand; to.hand = tmp;
-      FX.sound('card'); FX.burst('🃏', 8);
-      if (fromHuman || toHuman) FX.float('🃏 HANDS SWAPPED!', '#d4a8f0');
-      this.notify(`🃏 JESTER! ${from.name} swapped hands with ${to.name}!`,
-        fromHuman ? 'good' : (toHuman ? 'bad' : 'info'));
+      if (fromHuman || toHuman) { FX.sound('card'); FX.burst('🃏', 8); FX.float('🃏 HANDS SWAPPED!', '#d4a8f0'); }
+      if (fromHuman || toHuman) this.notify(`🃏 JESTER! ${from.name} swapped hands with ${to.name}!`,
+        fromHuman ? 'good' : 'bad');
     } else if (claim.bluffSpecial === 'wizard_strike') {
       to.health -= 2;
       from.health += 1;
       this.checkDeath(to);
       if (toHuman) FX.event('damage');
       else if (fromHuman) { FX.event('heal'); FX.float('🧙 STRIKE! −2 / +1', '#b46bff'); }
-      else FX.sound('damage');
-      this.notify(`🧙 WIZARD! ${from.name}'s spell hit ${to.name} for 2 — ${from.name} +1 HP.`,
-        fromHuman ? 'good' : (toHuman ? 'bad' : 'info'));
+      if (fromHuman || toHuman) this.notify(`🧙 WIZARD! ${from.name}'s spell hit ${to.name} for 2 — ${from.name} +1 HP.`,
+        fromHuman ? 'good' : 'bad');
     }
   },
 
@@ -488,6 +491,13 @@ const Engine = {
     if (!this.canAct()) return;
     if (this.state.phase !== 'sleep') return;
     const me = this.human();
+    // GATE: you must commit at least one assassin before the night resolves.
+    if (me.placedAssassins.length === 0) {
+      this.notify('🥷 Hide at least one assassin on the map before you sleep!', 'warn');
+      this.state.overlay = 'map';
+      UI.render();
+      return;
+    }
     me.sleepLocation = location;
     this.state.busy = true;
     this.resolveNight();
@@ -628,35 +638,35 @@ const Engine = {
     if (card.effect === 'heal') {
       me.health += card.value;
       if (isMe) FX.event('heal');
-      this.notify(`💚 ${card.icon} ${card.name} — +${card.value} HP.`, 'good');
+      this.notifyMine(me, `💚 ${card.icon} ${card.name} — +${card.value} HP.`, 'good');
     } else if (card.effect === 'money') {
       me.money += card.value;
       if (isMe) FX.event('coins');
-      this.notify(`💰 ${card.icon} ${card.name} — +${card.value}🪙.`, 'good');
+      this.notifyMine(me, `💰 ${card.icon} ${card.name} — +${card.value}🪙.`, 'good');
     } else if (card.effect === 'shield') {
       this.giveShield(me, card.value || 0.4);
       if (isMe) FX.event('shield');
-      this.notify(`🛡️ ${card.icon} ${card.name} — ${Math.round((card.value || 0.4) * 100)}% to block an assassin tonight.`, 'good');
+      this.notifyMine(me, `🛡️ ${card.icon} ${card.name} — ${Math.round((card.value || 0.4) * 100)}% to block an assassin tonight.`, 'good');
     } else if (card.effect === 'antidote') {
       me.poisoned = false; me.poisonBy = null;
       me.health += card.value;
       if (isMe) FX.event('heal');
-      this.notify(`💊 ${card.icon} ${card.name} — poison cured, +${card.value} HP.`, 'good');
+      this.notifyMine(me, `💊 ${card.icon} ${card.name} — poison cured, +${card.value} HP.`, 'good');
     } else if (card.effect === 'draw') {
       let drawn = 0;
       for (let i = 0; i < card.value; i++) if (this.drawInto(me)) drawn++;
       if (isMe) { FX.sound('card'); FX.float(`+${drawn} cards`, '#6bb6ff'); }
-      this.notify(`📜 ${card.icon} ${card.name} — drew ${drawn} card${drawn === 1 ? '' : 's'}.`, 'good');
+      this.notifyMine(me, `📜 ${card.icon} ${card.name} — drew ${drawn} card${drawn === 1 ? '' : 's'}.`, 'good');
     } else if (card.effect === 'assassin') {
       for (let i = 0; i < card.value; i++) me.assassins.push(CardSystem.createDailyAssassin());
       if (me.assassins.length > ASSASSIN_CAP) me.assassins = me.assassins.slice(-ASSASSIN_CAP);
       if (isMe) { FX.sound('click'); FX.float(`🥷 +${card.value}`, '#d4a8f0'); }
-      this.notify(`🗡️ ${card.icon} ${card.name} — gained ${card.value} assassin${card.value === 1 ? '' : 's'} for tonight.`, 'good');
+      this.notifyMine(me, `🗡️ ${card.icon} ${card.name} — gained ${card.value} assassin${card.value === 1 ? '' : 's'} for tonight.`, 'good');
     } else if (card.effect === 'maxhp') {
       me.maxHealth += 1;
       me.health += card.value;
       if (isMe) FX.event('heal');
-      this.notify(`🍖 ${card.icon} ${card.name} — +1 max HP, +${card.value} HP.`, 'good');
+      this.notifyMine(me, `🍖 ${card.icon} ${card.name} — +1 max HP, +${card.value} HP.`, 'good');
     }
   },
 
@@ -747,14 +757,11 @@ const Engine = {
         if (!isBluff) {
           this.applyCharacterEffect(target, ai, claim);
           ai.money += HONEST_BONUS; // honesty bonus for AI-to-AI sale too
-          this.notify(`🤝 ${ai.name} honestly sold ${claim.icon} ${claim.name} to ${target.name} (+${HONEST_BONUS}🪙 bonus).`, 'info');
-        } else {
-          this.notify(`🤝 ${ai.name} sold "${claim.name}" to ${target.name}.`, 'info');
         }
         CardSystem.removeFromHand(ai, realCard.uid);
         if (isBluff && realCard.bluffSpecial) this.applyBluffSpecial(ai, target, realCard);
       } else {
-        this.notify(`${target.name} declined ${ai.name}'s offer.`, 'warn');
+        // AI-to-AI decline stays private
       }
       UI.render();
       setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 2400);
@@ -779,7 +786,7 @@ const Engine = {
         if (v) {
           v.poisoned = true; v.poisonBy = ai.id;
           CardSystem.removeFromHand(ai, poison.uid);
-          this.notify(`☠️ ${ai.name} poisoned ${v === this.human() ? 'YOU' : v.name}!`, v === this.human() ? 'bad' : 'info');
+          this.notifyMine(v, `☠️ ${ai.name} poisoned YOU!`, 'bad');
           return true;
         }
       }

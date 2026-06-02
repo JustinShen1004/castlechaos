@@ -59,17 +59,17 @@ const PLAYERS_CONFIG = [
 const HONEST_BONUS = 2;   // extra coins the seller earns on an honest sale
 
 const ITEM_CARDS = [
-  { id: 'health_vial', name: 'Health Vial', type: 'item', desc: 'Restore 1 HP.', icon: '🧪', effect: 'heal', value: 1, weight: 5, buyPrice: 3 },
-  { id: 'coin_pouch', name: 'Coin Pouch', type: 'item', desc: 'Gain 4 coins.', icon: '💰', effect: 'money', value: 4, weight: 5, buyPrice: 3 },
-  { id: 'shield', name: 'Iron Shield', type: 'item', desc: '40% chance to block an assassin tonight.', icon: '🛡️', effect: 'shield', value: 0.4, weight: 2, buyPrice: 5 },
-  { id: 'poison_vial', name: 'Poison Vial', type: 'item', desc: 'Poison a rival — they lose 2 HP at next dawn. (Witch is immune.)', icon: '☠️', effect: 'poison', value: 2, weight: 3, buyPrice: 5, targeted: true },
-  { id: 'antidote', name: 'Antidote', type: 'item', desc: 'Cure your poison & heal 1 HP.', icon: '💊', effect: 'antidote', value: 1, weight: 4, buyPrice: 4 },
-  { id: 'battle_scroll', name: 'Battle Scroll', type: 'item', desc: 'Draw 2 cards.', icon: '📜', effect: 'draw', value: 2, weight: 4, buyPrice: 4 },
-  { id: 'hidden_dagger', name: 'Hidden Dagger', type: 'item', desc: 'Gain an assassin for tonight.', icon: '🗡️', effect: 'assassin', value: 1, weight: 3, buyPrice: 5 },
-  { id: 'royal_feast', name: 'Royal Feast', type: 'item', desc: '+1 max HP and heal 2 HP.', icon: '🍖', effect: 'maxhp', value: 2, weight: 2, buyPrice: 6 },
+  { id: 'health_vial', name: 'Health Vial', type: 'item', desc: 'Restore 1 HP.', icon: '🧪', effect: 'heal', value: 1, weight: 8, buyPrice: 3 },
+  { id: 'coin_pouch', name: 'Coin Pouch', type: 'item', desc: 'Gain 4 coins.', icon: '💰', effect: 'money', value: 4, weight: 8, buyPrice: 3 },
+  { id: 'shield', name: 'Iron Shield', type: 'item', desc: '40% chance to block an assassin tonight.', icon: '🛡️', effect: 'shield', value: 0.4, weight: 5, buyPrice: 5 },
+  { id: 'poison_vial', name: 'Poison Vial', type: 'item', desc: 'Poison a rival — they lose 2 HP at next dawn. (Witch is immune.)', icon: '☠️', effect: 'poison', value: 2, weight: 6, buyPrice: 5, targeted: true },
+  { id: 'antidote', name: 'Antidote', type: 'item', desc: 'Cure your poison & heal 1 HP.', icon: '💊', effect: 'antidote', value: 1, weight: 7, buyPrice: 4 },
+  { id: 'battle_scroll', name: 'Battle Scroll', type: 'item', desc: 'Draw 2 cards.', icon: '📜', effect: 'draw', value: 2, weight: 7, buyPrice: 4 },
+  { id: 'hidden_dagger', name: 'Hidden Dagger', type: 'item', desc: 'Gain an assassin for tonight.', icon: '🗡️', effect: 'assassin', value: 1, weight: 6, buyPrice: 5 },
+  { id: 'royal_feast', name: 'Royal Feast', type: 'item', desc: '+1 max HP and heal 2 HP.', icon: '🍖', effect: 'maxhp', value: 2, weight: 4, buyPrice: 6 },
   // --- new unique items (shop / rare draws) ---
-  { id: 'crown_jewel', name: 'Crown Jewel', type: 'item', desc: 'Gain 8 coins.', icon: '💎', effect: 'money', value: 8, weight: 1, buyPrice: 6, premium: true },
-  { id: 'war_horn', name: 'War Horn', type: 'item', desc: 'Gain 2 assassins for tonight.', icon: '📯', effect: 'assassin', value: 2, weight: 1, buyPrice: 8, premium: true },
+  { id: 'crown_jewel', name: 'Crown Jewel', type: 'item', desc: 'Gain 8 coins.', icon: '💎', effect: 'money', value: 8, weight: 2, buyPrice: 6, premium: true },
+  { id: 'war_horn', name: 'War Horn', type: 'item', desc: 'Gain 2 assassins for tonight.', icon: '📯', effect: 'assassin', value: 2, weight: 2, buyPrice: 8, premium: true },
 ];
 
 const CHARACTER_CARDS = [

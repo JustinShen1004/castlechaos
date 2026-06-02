@@ -12,7 +12,7 @@ body {
   color: #e8d4a8;
   min-height: 100vh;
   overflow-x: hidden;
-  zoom: 1.0;
+  zoom: 0.88;
 }
 
 .screen { display: none; min-height: 100vh; }
@@ -664,7 +664,16 @@ body[data-phase="resolve"] .game-header { border-bottom-color: #3a3a8a; }
 /* The night hides the hand (assassins are on the map) but keeps opponents + banner */
 #game-screen.night-mode .player-hand { display: none; }
 #game-screen.night-mode .player-section { padding: 10px 32px; }
-/* Game over: clear the board so the end screen owns the stage */
+/* Fullscreen night location selection */
+.sleep-fullscreen {
+  position: fixed; inset: 0; z-index: 60; overflow-y: auto;
+  background: radial-gradient(ellipse at top, #1a1438 0%, #070410 80%);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px 16px; gap: 10px;
+}
+.sleep-fullscreen h3 { font-size: 1.8em; color: #c8b8ff; letter-spacing: 2px; }
+.sleep-fullscreen .castle-map { width: min(92vw, 760px); height: min(62vh, 560px); }
+.sleep-gate { color: #ffce6b; font-weight: 700; }/* Game over: clear the board so the end screen owns the stage */
 #game-screen.gameover-mode .opponents-section,
 #game-screen.gameover-mode .player-section,
 #game-screen.gameover-mode #notification-banner { display: none; }
