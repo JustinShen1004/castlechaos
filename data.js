@@ -13,14 +13,34 @@ const DAILY_ASSASSINS = 2;   // assassins granted each dawn (Warlord gets +1)
 const ASSASSIN_CAP = 4;      // max assassins you can stockpile
 
 // --- Rulers (randomly assigned to every player at game start) ---
-// A tight set of 4 distinct powers. Descriptions are kept literal so the
-// blocked/immune messages in play read the same as the ruler card.
+// EXACTLY three rulers. Each has a quiet PASSIVE (always on) and a signature
+// ACTIVE ABILITY (a golden card, see RULER_ABILITIES) that unlocks after
+// Night 2 and recharges every couple of days.
 const RULERS = [
-  { id: 'witch',    name: 'The Witch',    icon: '🧙‍♀️', passive: 'poison_immune',  desc: 'Immune to poison — poison never hurts you.' },
-  { id: 'warlord',  name: 'The Warlord',  icon: '⚔️',    passive: 'extra_assassin', desc: 'Gains one extra assassin every dawn.' },
-  { id: 'sentinel', name: 'The Sentinel', icon: '🛡️',    passive: 'night_shield',   desc: 'Begins every night already shielded.' },
-  { id: 'giant',    name: 'The Giant',    icon: '🗿',    passive: 'tough',          desc: 'Tougher body — starts with 15 max HP.' },
+  { id: 'witch',    name: 'The Witch',    icon: '🧙‍♀️', passive: 'poison_immune', ability: 'magic_cauldron',  desc: 'Immune to poison. Ability: Magic Cauldron.' },
+  { id: 'giant',    name: 'The Giant',    icon: '🗿',    passive: 'tough',         ability: 'titan_endurance', desc: 'Starts with 15 max HP. Ability: Titan\'s Endurance.' },
+  { id: 'sentinel', name: 'The Sentinel', icon: '🛡️',    passive: 'night_shield',  ability: 'aegis_bulwark',   desc: 'Begins every night lightly shielded. Ability: Aegis Bulwark.' },
 ];
+
+// --- Ruler ABILITIES (the golden, shiny signature cards) ---
+// Unlock once the player has SURVIVED Night 2 (i.e. on Day 3+), then recharge
+// on a fixed cooldown. Each `id` maps to a handler in ruler-abilities.js.
+const ABILITY_UNLOCK_DAY = 3;   // abilities become usable on Day 3 (after Night 2)
+const ABILITY_COOLDOWN   = 2;   // days before a used ability recharges
+const RULER_ABILITIES = {
+  magic_cauldron: {
+    id: 'magic_cauldron', name: 'Magic Cauldron', icon: '🔮', ruler: 'witch', targeted: true,
+    desc: 'Summon 2 skeleton soldiers that each strike a chosen rival for 2. If they are shielded, the first is blocked — and one skeleton turns on YOU for 2.',
+  },
+  titan_endurance: {
+    id: 'titan_endurance', name: "Titan's Endurance", icon: '🪨', ruler: 'giant', targeted: false,
+    desc: "Tank up: recover ALL HP lost to last night's attacks, then brace for a 50% block next night.",
+  },
+  aegis_bulwark: {
+    id: 'aegis_bulwark', name: 'Aegis Bulwark', icon: '🛡️', ruler: 'sentinel', targeted: false,
+    desc: 'Raise a towering shield — a 60% chance to block an assassin on the coming night.',
+  },
+};
 
 // --- Players ---
 const PLAYERS_CONFIG = [

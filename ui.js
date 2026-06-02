@@ -141,7 +141,7 @@ const UI = {
           `<div class="stat-box stat-heart">❤️ ${ai.health}</div>` +
           `<div class="stat-box stat-coins">🪙 ${ai.money}</div>` +
           `<div class="stat-box stat-cards">🃏 ${ai.hand.length}</div>` +
-          (ai.shielded ? `<div class="stat-box stat-shield">🛡️</div>` : '') +
+          (ai.shieldChance > 0 ? `<div class="stat-box stat-shield">🛡️ ${Engine.shieldPct(ai)}%</div>` : '') +
         `</div>` +
         (canDrop && !ai.dead ? `<div class="card-hint" style="margin-top:8px;color:#6bff8a;">⬇ drop a card to give</div>` : '');
       // Drop handlers (idempotent)
@@ -160,7 +160,7 @@ const UI = {
   renderPlayerStats() {
     const me = Engine.human();
     const poison = me.poisoned ? `<div class="stat-box stat-heart">☠️</div>` : '';
-    const shield = me.shielded ? `<div class="stat-box stat-shield">🛡️</div>` : '';
+    const shield = me.shieldChance > 0 ? `<div class="stat-box stat-shield">🛡️ ${Engine.shieldPct(me)}%</div>` : '';
     const hp = me.health > me.maxHealth ? `${me.health} ✨` : `${me.health}/${me.maxHealth}`;
     this.playerStats.innerHTML =
       `<div class="stat-box stat-heart">❤️ ${hp}</div>` +
@@ -178,16 +178,62 @@ const UI = {
     if (card.type === 'assassin') return false;  // assassins are hidden on the map
     if (s.phase !== 'day') return false;
     if (!s.dayStarted) return false;
-    if (s.pendingTrade || s.pendingItemTrade || s.pendingTarget) return false;
+    if (s.pendingTrade || s.pendingItemTrade || s.pendingTarget || s.pendingAbility) return false;
     if (!Engine.isHumanTurn()) return false;
     if (s.playsLeft <= 0) return false;
     return true;
   },
 
+  // The golden, shiny ruler ABILITY card. Always shown so the player knows
+  // their signature power; playable (golden glow) only when ready, otherwise
+  // locked with a clear unlock / cooldown hint.
+  abilityCardHTML(me) {
+    const ab = Engine.abilityFor(me);
+    if (!ab) return '';
+    const ready = this.canPlay({ type: 'ability' }) && Engine.abilityReady(me);
+    let hint;
+    if (Engine.state.day < ABILITY_UNLOCK_DAY) {
+      hint = `<div class="card-hint">UNLOCKS DAY ${ABILITY_UNLOCK_DAY}</div>`;
+    } else if (!Engine.abilityReady(me)) {
+      const left = Engine.abilityCooldownLeft(me);
+      hint = `<div class="card-hint">RECHARGES IN ${left} DAY${left === 1 ? '' : 'S'}</div>`;
+    } else {
+      hint = `<div class="card-hint ability-hint">⚡ TAP TO UNLEASH</div>`;
+    }
+    return `<div class="card ability${ready ? ' ready' : ' locked'}" ` +
+      `onclick="${ready ? 'UI.abilityClick()' : `UI.showAbilityInfo()`}">` +
+      `<button class="card-info" onclick="event.stopPropagation();UI.showAbilityInfo()">i</button>` +
+      `<div class="card-type-tag">RULER</div>` +
+      `<div class="card-name">${ab.name}</div>` +
+      `<div class="card-art">${ab.icon}</div>` +
+      `<div class="card-desc">${ab.desc}</div>${hint}</div>`;
+  },
+
+  abilityClick() {
+    FX.sound('card');
+    Engine.useAbility();
+  },
+
+  showAbilityInfo() {
+    const ab = Engine.abilityFor(Engine.human());
+    if (!ab) return;
+    document.getElementById('card-modal').innerHTML =
+      `<div class="modal-back" onclick="UI.closeInfo()"></div>` +
+      `<div class="modal-card ability">` +
+        `<div class="card-art" style="font-size:4em;">${ab.icon}</div>` +
+        `<h2 style="color:#ffe9a8;">${ab.name}</h2>` +
+        `<div class="card-type-tag" style="font-size:0.9em;">RULER ABILITY</div>` +
+        `<p style="margin:10px 0;font-size:1.1em;">${ab.desc}</p>` +
+        `<p style="color:#a89070;font-size:0.95em;">Unlocks on Day ${ABILITY_UNLOCK_DAY} (after Night 2), then recharges every ${ABILITY_COOLDOWN} days.</p>` +
+        `<button class="btn-icon" onclick="UI.closeInfo()" style="margin-top:14px;">Close</button>` +
+      `</div>`;
+    document.getElementById('card-modal').classList.add('open');
+  },
+
   // --- Hand (bottom) ---
   renderHand() {
     const me = Engine.human();
-    let html = '';
+    let html = this.abilityCardHTML(me); // golden signature card leads the hand
     me.hand.forEach(card => {
       const ok = this.canPlay(card);
       const draggable = ok && card.type === 'character';
@@ -258,6 +304,16 @@ const UI = {
       `<div class="cstat"><span>🏆 Wins</span><strong>${st.wins}</strong></div>` +
       `<div class="cstat"><span>📅 Best Day</span><strong>${st.bestDay}</strong></div>`;
 
+    // Rulers lead the collection as golden, shiny cards (always shown)
+    const rulerHTML = RULERS.map(r => {
+      const ab = RULER_ABILITIES[r.ability];
+      return `<div class="coll-card ruler">` +
+        `<div class="coll-art">${r.icon}</div>` +
+        `<div class="coll-name">${r.name}</div>` +
+        `<div class="coll-desc">${ab ? ab.icon + ' ' + ab.name + ' — ' + ab.desc : r.desc}</div>` +
+        `<div class="coll-tag">RULER</div></div>`;
+    }).join('');
+
     const html = all.map(c => {
       const got = Save.isUnlocked(c.id);
       if (!got) {
@@ -271,7 +327,7 @@ const UI = {
         `<div class="coll-desc">${c.desc}</div>` +
         `<div class="coll-tag">${c.type.toUpperCase()}</div></div>`;
     }).join('');
-    document.getElementById('collection-grid').innerHTML = html;
+    document.getElementById('collection-grid').innerHTML = rulerHTML + html;
   },
 
   // Card detail popup — works for your cards and opponent/known cards
@@ -337,6 +393,6 @@ const UI = {
     setTimeout(() => {
       if (done) done();         // swap phase behind the curtain (sets its own lock state)
       o.classList.remove('show');
-    }, 1600);
+    }, 2600);
   },
 };

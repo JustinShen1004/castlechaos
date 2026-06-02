@@ -27,10 +27,12 @@ const Engine = {
         location: cfg.homeTower,
         poisoned: false,
         poisonBy: null,    // who poisoned you (for the dawn message)
-        shielded: false,
+        shieldChance: 0,   // 0 = no shield; else 0..1 chance to block each assassin hit tonight
         dead: false,
         placedAssassins: [], // [locationId, ...] — hidden any time via the map
         sleepLocation: null,
+        lastNightDamage: 0,  // HP lost to assassins last night (Giant's ability heals this)
+        abilityUsedDay: null, // day the ruler ability was last used (null = never)
       };
     });
 
@@ -42,6 +44,7 @@ const Engine = {
       pendingTrade: null,
       pendingItemTrade: null,  // Merchant: buy a rival's item with coins
       pendingTarget: null,     // targeted item (e.g. Poison Vial) awaiting a victim
+      pendingAbility: null,    // targeted ruler ability (Witch) awaiting a victim
       overlay: null,           // null | 'market' | 'map' — fullscreen pause overlay
       shopTab: 'buffs',
       dayStarted: false,       // gate before the day's turns (also the save point)
@@ -71,6 +74,7 @@ const Engine = {
     this.state.pendingTrade = null;
     this.state.pendingItemTrade = null;
     this.state.pendingTarget = null;
+    this.state.pendingAbility = null;
     UI.render();
     return true;
   },
@@ -99,6 +103,15 @@ const Engine = {
   hasPassive(player, passive) {
     return player.ruler && player.ruler.passive === passive;
   },
+
+  // Grant a shield for the coming night. Shields are CHANCE-BASED: `chance`
+  // is the probability (0..1) that each incoming assassin hit is blocked.
+  // Stacking takes the BEST chance rather than adding (keeps it readable).
+  giveShield(player, chance) {
+    player.shieldChance = Math.max(player.shieldChance || 0, chance);
+  },
+  // Human-readable shield percentage for the UI (e.g. "40%"). 0 if none.
+  shieldPct(player) { return Math.round((player.shieldChance || 0) * 100); },
 
   // --- Input lock ---------------------------------------------------------
   // While `busy` is true, every player-facing action is ignored so that one
@@ -129,7 +142,6 @@ const Engine = {
     if (this.state.day > 1) {
       this.alive().forEach(p => {
         for (let i = 0; i < DAILY_ASSASSINS; i++) p.assassins.push(CardSystem.createDailyAssassin());
-        if (this.hasPassive(p, 'extra_assassin')) p.assassins.push(CardSystem.createDailyAssassin());
         if (p.assassins.length > ASSASSIN_CAP) p.assassins = p.assassins.slice(-ASSASSIN_CAP);
         for (let i = 0; i < DAILY_DRAW; i++) this.drawInto(p);
       });
@@ -203,7 +215,7 @@ const Engine = {
       this.state.busy = true;
       this.notify(`${cur.icon} ${cur.name}'s turn`, 'info');
       UI.render();
-      setTimeout(() => this.aiTakeTurn(cur), 1500);
+      setTimeout(() => this.aiTakeTurn(cur), 2600);
     } else {
       this.state.busy = false;
       this.notify(`Your turn — trade, use items, shop, or hide assassins.`, 'info');
@@ -215,7 +227,7 @@ const Engine = {
     this.state.busy = true;
     this.state.turnPos++;
     UI.render();
-    setTimeout(() => this.startTurn(), 800);
+    setTimeout(() => this.startTurn(), 1400);
   },
 
   skipTurn() {
@@ -260,7 +272,7 @@ const Engine = {
     UI.render();
     // AI decides
     if (target.ai) {
-      setTimeout(() => this.aiRespondTrade(), 1600);
+      setTimeout(() => this.aiRespondTrade(), 2600);
     }
   },
 
@@ -373,12 +385,12 @@ const Engine = {
       // Stay locked through the brief beat before the play is consumed
       this.state.busy = true;
       UI.render();
-      setTimeout(() => this.consumePlay(), 700);
+      setTimeout(() => this.consumePlay(), 1200);
     } else if (aiResume) {
       // The human just answered a bot's offer — keep locked while the bot continues
       this.state.busy = true;
       UI.render();
-      setTimeout(() => this.aiTakeTurn(aiResume.ai, aiResume.playsMade), 1400);
+      setTimeout(() => this.aiTakeTurn(aiResume.ai, aiResume.playsMade), 2400);
     } else {
       UI.render();
     }
@@ -387,7 +399,7 @@ const Engine = {
   applyCharacterEffect(buyer, seller, card) {
     const buyerIsHuman = buyer === this.human();
     if (card.effect === 'heal') { buyer.health += card.value; if (buyerIsHuman) FX.event('heal'); else FX.sound('heal'); }
-    else if (card.effect === 'shield') { buyer.shielded = true; if (buyerIsHuman) FX.event('shield'); else FX.sound('shield'); }
+    else if (card.effect === 'shield') { this.giveShield(buyer, card.value || 0.4); if (buyerIsHuman) FX.event('shield'); else FX.sound('shield'); }
     else if (card.effect === 'money') { buyer.money += card.value; if (buyerIsHuman) FX.event('coins'); else FX.sound('coins'); }
     else if (card.effect === 'draw') { for (let i = 0; i < card.value; i++) this.drawInto(buyer); FX.sound('card'); }
     else if (card.effect === 'forest') {
@@ -491,9 +503,9 @@ const Engine = {
     UI.render();
     const me = this.human();
 
-    // Sentinel begins the night already shielded
+    // Sentinel begins the night already lightly shielded (a modest passive block)
     this.alive().forEach(p => {
-      if (this.hasPassive(p, 'night_shield') && !p.shielded) p.shielded = true;
+      if (this.hasPassive(p, 'night_shield')) this.giveShield(p, Math.max(p.shieldChance || 0, 0.3));
     });
 
     let myStruck = 0, myBlocked = 0;
@@ -505,36 +517,44 @@ const Engine = {
         if (attacker === victim) return; // your own assassins never harm you
         const hits = attacker.placedAssassins.filter(loc => loc === victim.sleepLocation).length;
         for (let i = 0; i < hits; i++) {
-          if (victim.shielded) { victim.shielded = false; blocked++; }
+          // Chance-based block: roll against the shield's chance for THIS hit
+          if (victim.shieldChance > 0 && Math.random() < victim.shieldChance) blocked++;
           else { victim.health -= 2; struck++; }
         }
       });
+      victim.lastNightDamage = struck * 2; // remembered for the Giant's ability
       if (victim === me) { myStruck = struck; myBlocked = blocked; }
       else if (struck > 0) otherEvents.push(`🥷 ${victim.name} was ambushed in ${this.roomName(victim.sleepLocation)} — −${struck * 2} HP!`);
       else if (blocked > 0) otherEvents.push(`🛡️ ${victim.name}'s shield held in ${this.roomName(victim.sleepLocation)}.`);
     });
 
-    // Clear placements now that hits are tallied
-    this.alive().forEach(p => { p.placedAssassins = []; p.sleepLocation = null; });
+    // Clear placements + spent shields now that hits are tallied
+    this.alive().forEach(p => { p.placedAssassins = []; p.sleepLocation = null; p.shieldChance = 0; });
 
     // One clear banner for the player's own night
     if (myStruck > 0) { FX.event('damage'); this.notify(`🗡️ You were ambushed for −${myStruck * 2} HP!${myBlocked ? ` (${myBlocked} blocked 🛡️)` : ''}`, 'bad'); }
     else if (myBlocked > 0) { FX.event('shield'); this.notify(`🛡️ Your shield blocked the assassins — unharmed!`, 'good'); }
     else { this.notify(`😌 A quiet night — you wake unharmed.`, 'good'); }
 
-    setTimeout(() => this.finishNight(otherEvents), 1500);
+    setTimeout(() => this.finishNight(otherEvents), 3000);
   },
 
   // After the night: report rivals, deaths, win check, advance the day
   finishNight(otherEvents) {
-    if (otherEvents && otherEvents.length) this.notify(otherEvents.join('  '), 'info');
+    if (otherEvents && otherEvents.length) {
+      // Show the rivals' fates on their own beat so it's readable
+      this.notify(otherEvents.join('  '), 'info');
+      UI.render();
+      setTimeout(() => this.finishNight([]), 2600);
+      return;
+    }
     this.alive().forEach(p => this.checkDeath(p));
     if (this.checkWin()) return;
     this.state.day++;
     this.state.busy = false;
     setTimeout(() => {
       UI.transition(`☀️ DAY ${this.state.day}`, 'A new dawn breaks over the castle.', () => this.startDay());
-    }, 1600);
+    }, 2000);
     UI.render();
   },
 
@@ -614,9 +634,9 @@ const Engine = {
       if (isMe) FX.event('coins');
       this.notify(`💰 ${card.icon} ${card.name} — +${card.value}🪙.`, 'good');
     } else if (card.effect === 'shield') {
-      me.shielded = true;
+      this.giveShield(me, card.value || 0.4);
       if (isMe) FX.event('shield');
-      this.notify(`🛡️ ${card.icon} ${card.name} — 40% to block an assassin tonight.`, 'good');
+      this.notify(`🛡️ ${card.icon} ${card.name} — ${Math.round((card.value || 0.4) * 100)}% to block an assassin tonight.`, 'good');
     } else if (card.effect === 'antidote') {
       me.poisoned = false; me.poisonBy = null;
       me.health += card.value;
@@ -672,10 +692,17 @@ const Engine = {
     if (ai.dead || this.state.phase !== 'day') { this.nextTurn(); return; }
     if (playsMade >= 2) { this.notify(`${ai.icon} ${ai.name} ends their turn.`, 'info'); this.nextTurn(); return; }
 
-    // First, a bot may use a beneficial item on itself (heal when hurt, etc.)
+    // First, a bot may fire its signature ruler ability (counts as a play)
+    if (this.aiMaybeUseAbility && this.aiMaybeUseAbility(ai)) {
+      UI.render();
+      setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 2400);
+      return;
+    }
+
+    // Next, a bot may use a beneficial item on itself (heal when hurt, etc.)
     if (this.aiMaybeUseItem(ai)) {
       UI.render();
-      setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 1300);
+      setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 2200);
       return;
     }
 
@@ -730,7 +757,7 @@ const Engine = {
         this.notify(`${target.name} declined ${ai.name}'s offer.`, 'warn');
       }
       UI.render();
-      setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 1400);
+      setTimeout(() => this.aiTakeTurn(ai, playsMade + 1), 2400);
     }
   },
 

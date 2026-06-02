@@ -41,15 +41,24 @@ const CardSystem = {
     return this.createCard(DRAW_POOL[DRAW_POOL.length - 1]);
   },
 
-  // Give starting hand — 5 cards: Merchant + 2 staple items + 2 random draws
+  // Give starting hand — 5 cards, VARIED every game so no two openings feel
+  // the same. Guaranteed: the free Merchant (so you always have the buy flow)
+  // and at least one survival staple (heal / shield / antidote). The rest are
+  // weighted random draws, shuffled so their order varies too.
   createStartingHand() {
-    return [
-      this.createCard(CHARACTER_CARDS.find(c => c.id === 'merchant')),
-      this.createCard(ITEM_CARDS.find(c => c.id === 'health_vial')),
-      this.createCard(ITEM_CARDS.find(c => c.id === 'coin_pouch')),
-      this.randomDraw(),
-      this.randomDraw(),
-    ];
+    const hand = [this.createCard(CHARACTER_CARDS.find(c => c.id === 'merchant'))];
+    // One guaranteed survival staple, picked at random from a small set
+    const staples = ['health_vial', 'shield', 'antidote', 'royal_feast'];
+    const stapleId = staples[Math.floor(Math.random() * staples.length)];
+    hand.push(this.createCard(ITEM_CARDS.find(c => c.id === stapleId)));
+    // Three fully random weighted draws to round out the opening
+    for (let i = 0; i < 3; i++) hand.push(this.randomDraw());
+    // Shuffle so the Merchant/staple aren't always first
+    for (let i = hand.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [hand[i], hand[j]] = [hand[j], hand[i]];
+    }
+    return hand;
   },
 
   // Give daily assassin

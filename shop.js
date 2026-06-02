@@ -59,7 +59,7 @@ Object.assign(Engine, {
     const isMe = p === this.human();
     if (w.kind === 'heal') { p.health += w.value; if (isMe) FX.event('heal'); }
     else if (w.kind === 'maxhp') { p.maxHealth += 1; p.health += w.value; if (isMe) FX.event('heal'); }
-    else if (w.kind === 'shield') { p.shielded = true; if (isMe) FX.event('shield'); }
+    else if (w.kind === 'shield') { this.giveShield(p, w.value || 0.4); if (isMe) FX.event('shield'); }
     else if (w.kind === 'antidote') { p.poisoned = false; p.poisonBy = null; p.health += w.value; if (isMe) FX.event('heal'); }
     else if (w.kind === 'assassin') {
       for (let i = 0; i < w.value; i++) p.assassins.push(CardSystem.createDailyAssassin());

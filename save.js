@@ -69,7 +69,7 @@ const Save = {
     try {
       const snap = JSON.parse(JSON.stringify(state));
       snap.winner = null; snap.busy = false; snap.overlay = null;
-      snap.pendingTrade = null; snap.pendingItemTrade = null; snap.pendingTarget = null;
+      snap.pendingTrade = null; snap.pendingItemTrade = null; snap.pendingTarget = null; snap.pendingAbility = null;
       this.data.game = snap;
       this.persist();
     } catch (e) {}

@@ -137,6 +137,14 @@ body {
 .coll-card.item { border-color: #6bff8a; }
 .coll-card.character { border-color: #6bb6ff; }
 .coll-card.assassin { border-color: #ff6b6b; }
+.coll-card.ruler {
+  border-color: #ffd86b; grid-column: span 1;
+  background: linear-gradient(160deg, #5a4410 0%, #2c2008 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 0 18px rgba(255,216,107,0.35);
+  animation: goldGlow 2.2s ease-in-out infinite;
+}
+.coll-card.ruler .coll-tag { background: linear-gradient(180deg, #fff4cc, #d4af37); color: #3a2400; }
+.coll-card.ruler .coll-desc { color: #ffe9b8; }
 .coll-card.locked { border-color: #2a2a3a; filter: grayscale(1); opacity: 0.55; }
 .coll-art { font-size: 2.8em; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
 .coll-name {
@@ -475,6 +483,45 @@ body {
   border: 1px solid rgba(107,255,138,0.4); border-radius: 14px; padding: 3px 10px;
   background: rgba(107,255,138,0.08);
 }
+
+/* ===== GOLDEN RULER ABILITY CARD (shiny, premium) ===== */
+.card.ability {
+  border: 2px solid #ffd86b;
+  background: linear-gradient(160deg, #5a4410 0%, #3a2c08 55%, #241a04 100%);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55), 0 0 18px rgba(255,216,107,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.card.ability .card-art {
+  background: radial-gradient(circle at 50% 38%, rgba(255,216,107,0.45) 0%, transparent 70%);
+  box-shadow: inset 0 0 22px rgba(255,216,107,0.3);
+}
+.card.ability .card-type-tag {
+  background: linear-gradient(180deg, #fff4cc, #d4af37); color: #3a2400;
+}
+.card.ability .card-desc { color: #ffe9b8; }
+/* When ready, the golden card shimmers and pulses to beg to be played */
+.card.ability.ready {
+  cursor: pointer;
+  animation: goldGlow 1.8s ease-in-out infinite;
+}
+.card.ability.ready::after {
+  content: ''; position: absolute; top: -60%; left: -40%; width: 45%; height: 220%;
+  background: linear-gradient(100deg, transparent, rgba(255,245,200,0.6), transparent);
+  transform: rotate(18deg); z-index: 1; pointer-events: none;
+  animation: cardShine 2.6s ease-in-out infinite;
+}
+.card.ability.ready:hover { animation: none; transform: translateY(-12px); box-shadow: 0 18px 40px rgba(255,216,107,0.6), inset 0 1px 0 rgba(255,255,255,0.3); }
+/* When locked (cooldown / not unlocked) it's dimmed but legible, not blacked out */
+.card.ability.locked { filter: grayscale(0.55) brightness(0.7); cursor: pointer; }
+.card.ability.locked:hover { transform: translateY(-4px); }
+.card-hint.ability-hint { color: #ffe9a8; border-color: rgba(255,216,107,0.6); background: rgba(255,216,107,0.12); }
+@keyframes goldGlow {
+  0%, 100% { box-shadow: 0 6px 18px rgba(0,0,0,0.55), 0 0 18px rgba(255,216,107,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
+  50% { box-shadow: 0 6px 24px rgba(0,0,0,0.55), 0 0 34px rgba(255,216,107,0.85), inset 0 1px 0 rgba(255,255,255,0.35); }
+}
+/* Ability detail modal gets the gold treatment too */
+.modal-card.ability { border-color: #ffd86b; box-shadow: 0 0 40px rgba(255,216,107,0.5); }
+/* Ruler reveal: ability line under each ruler at setup */
+.rr-ability { margin-top: 8px; font-size: 0.82em; color: #ffd86b; }
 
 /* ============ CHOICE GRID ============ */
 .choice-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
@@ -1225,6 +1272,7 @@ body[data-phase="resolve"] .game-header { border-bottom-color: #3a3a8a; }
 <script src="game-engine.js"></script>
 <script src="trade-merchant.js"></script>
 <script src="shop.js"></script>
+<script src="ruler-abilities.js"></script>
 <script src="tutorial.js"></script>
 <script src="ui.js"></script>
 <script src="ui-actions.js"></script>

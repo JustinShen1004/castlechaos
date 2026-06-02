@@ -49,7 +49,7 @@ Object.assign(Engine, {
     this.state.busy = true;
     this.notify(`🤝 Offering ${price}🪙 for ${target.name}'s ${want.icon} ${want.name}…`, 'info');
     UI.render();
-    setTimeout(() => this.resolveItemBuy(accept), 1400);
+    setTimeout(() => this.resolveItemBuy(accept), 2400);
   },
 
   resolveItemBuy(accepted) {

@@ -8,6 +8,7 @@ Object.assign(UI, {
     // Pending interactions take priority over the phase panel
     if (s.pendingItemTrade) { this.actionArea.innerHTML = this.itemTradeHTML(); return; }
     if (s.pendingTarget)   { this.actionArea.innerHTML = this.targetHTML(); return; }
+    if (s.pendingAbility)  { this.actionArea.innerHTML = this.abilityTargetHTML(); return; }
     let html = '';
     switch (s.phase) {
       case 'setup':    html = this.setupHTML(); break;
@@ -22,24 +23,26 @@ Object.assign(UI, {
   // --- SETUP: rulers revealed (yours highlighted), auto-advances to Day 1 ---
   setupHTML() {
     if (!this._setupTimer) {
-      this._setupTimer = setTimeout(() => Engine.beginGame(), 4200);
+      this._setupTimer = setTimeout(() => Engine.beginGame(), 6500);
     }
     const me = Engine.human();
     const cards = Engine.state.players.map(p => {
       const you = !p.ai;
+      const ab = RULER_ABILITIES[p.ruler.ability];
       return `<div class="ruler-reveal${you ? ' you' : ''}" style="--rc:${you ? '#6bff8a' : p.color};">` +
         `${you ? '<div class="ruler-you-tag">⭐ YOU ⭐</div>' : ''}` +
         `<div class="rr-who" style="color:${you ? '#6bff8a' : p.color};">${p.icon} ${you ? 'YOU' : p.name}</div>` +
         `<div class="rr-face">${p.ruler.icon}</div>` +
         `<div class="rr-name">${p.ruler.name}</div>` +
         `<div class="rr-desc">${p.ruler.desc}</div>` +
+        (ab ? `<div class="rr-ability">${ab.icon} <strong>${ab.name}</strong></div>` : '') +
       `</div>`;
     }).join('');
     return `<div style="text-align:center;">` +
       `<h2 style="font-size:1.9em;color:#d4af37;letter-spacing:3px;">👑 RULERS ASSIGNED</h2>` +
       `<p style="font-size:1.15em;margin-top:6px;">You are the <strong style="color:#6bff8a;">${me.ruler.icon} ${me.ruler.name}</strong> — ${me.ruler.desc}</p>` +
       `<div class="ruler-grid">${cards}</div>` +
-      `<p style="color:#a89070;margin-top:10px;">Your reign begins shortly…</p></div>`;
+      `<p style="color:#a89070;margin-top:10px;">Ruler abilities awaken after Night 2. Your reign begins shortly…</p></div>`;
   },
 
   // --- DAY: intro gate, incoming offers, then your turn panel with buttons ---
@@ -104,6 +107,19 @@ Object.assign(UI, {
       targets.map(p => `<button class="choice-btn" style="border-left:4px solid ${p.color}" ` +
         `onclick="Engine.usePoisonOn('${p.id}')">${p.icon} ${p.name} (❤️${p.health})</button>`).join('') +
       `</div><button class="btn-icon" onclick="Engine.cancelTarget()" style="margin-top:8px;">Cancel</button>`;
+  },
+
+  // --- Targeted ruler ability (Witch's Magic Cauldron): pick a rival ---
+  abilityTargetHTML() {
+    const ab = Engine.abilityFor(Engine.human());
+    const targets = Engine.aliveAI();
+    return `<h3>${ab ? ab.icon + ' ' + ab.name : 'Choose a target'}</h3>` +
+      `<p style="color:#ffe9a8;">${ab ? ab.desc : ''}</p>` +
+      `<p style="color:#a89070;">Unleash it on which rival?</p>` +
+      `<div class="choice-grid">` +
+      targets.map(p => `<button class="choice-btn" style="border-left:4px solid ${p.color}" ` +
+        `onclick="Engine.useAbilityOn('${p.id}')">${p.icon} ${p.name} (❤️${p.health}${p.shieldChance > 0 ? ' 🛡️' + Engine.shieldPct(p) + '%' : ''})</button>`).join('') +
+      `</div><button class="btn-icon" onclick="Engine.cancelAbility()" style="margin-top:8px;">Cancel</button>`;
   },
 
   // --- SLEEP: choose your bed on the castle map ---
@@ -256,6 +272,6 @@ Object.assign(UI, {
     setTimeout(() => {
       if (done) done();
       o.classList.remove('show');
-    }, 1600);
+    }, 2600);
   },
 });
